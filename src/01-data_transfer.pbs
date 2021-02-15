@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#PBS -q ftp
+#PBS -l mem=8g
+#PDB -l ncpus=1
+#PBS -l walltime=180:00:00
+#PBS -j oe
+
+## DESCRIPTION ##
+# DL sequences from nanuq
+# From /home/datawork-hemovir/src/DL_sequencage_from_namuq.pbs
+
+## USAGE ##
+# qsub -v "login=,password=,outdir=/PATH/OshV-1-molepidemio/raw/" /PATH/OshV-1-molepidemio/src/01-data_transfer.pbs
+
+cd $outdir
+
+#echo -n "j_username=$login&j_password=$password" \
+#    > /home/datawork-hemovir/raw/.auth.txt && chmod 600 /home/datawork-hemovir/raw/.auth.txt && wget \
+#    -O - "https://ces.genomequebec.com/nanuqMPS/readsetList?projectId=XXXXXXXXXX&tech=XXXXXXXXXXXXX" \
+#    --no-cookies \
+#    --no-check-certificate \
+#    --post-file /home/datawork-hemovir/raw/.auth.txt \
+#    | wget --no-cookies --no-check-certificate --post-file \
+#    /home/datawork-hemovir/raw/.auth.txt -ci -; \
+
+echo -n "j_username=$login&j_password=$password" > .tmp598745661.dat	
+chmod "600" .tmp598745661.dat
+if [ "$(which wget)" ]
+then   
+    echo "Downloading with Wget"   
+    wget --no-cookies --no-check-certificate -c -i /home/datawork-hemovir/raw/readSetLinks.txt --post-file .tmp598745661.dat
+    rm .tmp598745661.dat
+else 
+    echo "Downloading with Curl"
+    xargs -n1 curl -C - -J -L -d "@.tmp598745661.dat" -O < /home/datawork-hemovir/raw/readSetLinks.txt
+    rm .tmp598745661.dat
+fi
+
+# Check MD5 locally
+# for file in *fastq.gz ; do md5sum ${file} >> haplofit_md5sum.txt  ; done
