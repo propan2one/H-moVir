@@ -8,4 +8,14 @@ The genetic diversity of viral populations has become a major issue in the under
 
 ## Upstream analysis
 
+Login and login passwords are missing in the code. The paths used are explained in the code are replaced for security reasons.
+
+- `/PATH/OshV-1-molepidemio/raw/` Chemin menant au dossier ou les séquences brutes sont téléchargé.
+- 
+
+### 1) Data transfer
+
+All data has been transferred and MD5 have been check from the servers of the transfer platform to the datarmor calculation server with : [01-data_transfer.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/01-data_transfer.pbs)
+
+
 ## Downstream analysis
