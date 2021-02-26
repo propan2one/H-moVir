@@ -1,0 +1,90 @@
+---
+title: "Meta-datas analysis of Haplofit project"
+author: "Delmotte jean"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: TRUE
+    code_folding: "hide"
+    theme: united
+    highlight: tango
+    number_sections: true
+params: 
+  output_dir: "/export/home/delmotte/Project/DiVir/results/Knits/"
+editor_options: 
+  chunk_output_type: console
+---
+
+# Preliminary data for analysis
+
+The purpose of this R script is to perform a cleanup on the raw results of the metadata summary tables provided by the sequencing platform. In particular, it will allow to create the `ID_experiment.csv` file which contains the table necessary to launch the loops to the PBS scheduler.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Fonction to install / load package if it's not here
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+ipak(unique(
+  c("data.table", "tidyverse")  ) )
+```
+
+```{r Base_Path}
+base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
+```
+
+## Metadata available
+
+```{r WGS_metadatas}
+metadata <- dplyr::full_join(data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/HaploFit_samples_2020-02-06.csv"), header = TRUE),
+                            data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/HaploFit_NovaSeqReadSet_2020-02-07.csv"), header = TRUE) ) %>% 
+  dplyr::distinct() %>%
+  dplyr::select(Nom,
+                `Type de séquençage`,
+                `Type de la librairie `, # il y a un espace dans le nom...
+                `Volume (ul)`,
+                `Concentration à la réception (ng/ul)`,
+                `Concentration mesurée (ng/ul)`,
+                `Quantité (ng)`,
+                `Nombre de bases`,
+                `Nombre de lectures NovaSeq`,
+                `Nombre de lectures`,
+                `Qualité moyenne`,
+                `% Duplicata`,
+                `Préfixe du fichier`) %>%
+  left_join(.,
+          data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/correspondence_name-ID.csv"), header = TRUE) %>%
+            as_tibble() ) %>%
+  dplyr::distinct() %>%
+  dplyr::select(Nom, ID_EXPERIMENT, dplyr::everything())
+
+metadata %>%
+  data.table::fwrite(glue::glue("{base_path}/results/Tables/Table_01_metadata.csv"),
+         sep = ",",
+         quote=FALSE,
+         row.names = FALSE)
+
+# Génération d'un tableau permettant de lancer les loop sur le serveur
+metadata %>%
+  dplyr::as_tibble() %>%
+  dplyr::filter(!is.na(ID_EXPERIMENT)) %>%
+  dplyr::select(`Préfixe du fichier`, ID_EXPERIMENT) %>%
+  data.table::fwrite(glue::glue("{base_path}/results/Tables/ID_experiment.csv"),
+         sep = "\t",
+         quote=FALSE,
+         row.names = FALSE,
+         col.names = FALSE)
+
+# Vérification des adaptater dans le fichier pour le trimming
+data.table::fread(glue::glue("{base_path}/raw/HaploFit_NovaSeqReadSet_2020-02-07.csv"), header = TRUE) %>%
+  dplyr::select(`Adaptateur Read 1 (NOTE: Usage restreint par le Disclaimer Illumina visible dans la page Projet de Nanuq)`,
+                `Adaptateur Read 2 (NOTE: Usage restreint par le Disclaimer Illumina visible dans la page Projet de Nanuq)`) %>%
+  dplyr::rename(Adaptateur_Read_1 = `Adaptateur Read 1 (NOTE: Usage restreint par le Disclaimer Illumina visible dans la page Projet de Nanuq)`,
+                Adaptateur_Read_2 = `Adaptateur Read 2 (NOTE: Usage restreint par le Disclaimer Illumina visible dans la page Projet de Nanuq)`) %>%
+  dplyr::distinct()
+```

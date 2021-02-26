@@ -1,0 +1,440 @@
+#!/usr/bin/env bash
+#PBS -q omp
+#PBS -l ncpus=16
+#PBS -l mem=111gb
+#PBS -l walltime=45:00:00
+
+## DESCRIPTION ##
+# Rarefaction pour regarder si les polymorphismes sont du à la profondeur de séquençage
+
+## USAGE ##
+# qsub -v "rate=5000, reads1=,reads2=,genomefile=/OsHV_genomes_folder/.fa,outdir=, gffFile=/OsHV_genomes_folder/.gff3,id=" /PATH/OshV-1-molepidemio/src/02-rarefaction_virus.pbs
+
+## History ##
+# From rarefaction_virus.pbs (2019-29-05)
+
+### Env and software ##
+
+## Activation des environnement ##
+#Chargement de conda
+export PATH=$PATH:/appli/anaconda/2.7/bin
+#Chargement de l'environnement avec les outils
+source activate /home/datawork-hemovir/env-Hemovir-longReads
+
+## Execute script ##
+
+# Path to results
+cd $outdir
+echo $outdir
+
+chemin=$outdir
+basefile=$(basename $reads1 .fastq.gz)
+basefileReads2=$(basename $reads2 .fastq.gz)
+logfile=${basefile}_log.txt
+ID=$id
+readsTrim1=${basefile}_trim.fastq.gz
+readsTrim2=${basefileReads2}_trim.fastq.gz
+fileReads=${basefile}_tot_reads.txt
+statistique_file=${basefile}_stat_file.txt
+bamfile=${basefile}_aligned.bam
+mapped=${bamfile%.bam}_mapped.bam
+sortbamfile=${bamfile%.bam}_sortBAM.bam
+subsampleBam=${bamfile%.bam}_subsample.bam
+alnPysamstats=${basefile}_aln_PysamStat_var.txt
+vcffile=${sortbamfile%.bam}.vcf
+rarefacFile=${ID}_rarefaction.csv
+subsampleBam=${ID}_subsampl.bam
+
+# Created output directory
+if [ ! -d "${ID}_rarefaction" ];
+then
+    mkdir ${ID}_rarefaction
+    cd ${ID}_rarefaction
+    echo -e "\n Creating ${ID}_rarefaction...\n" > $logfile
+else
+    cd ${ID}_rarefaction
+    echo -e "\n The directory ${ID}_rarefaction already exist $(date +%Y-%m-%d_%Hh%Mm%Ss) ...\n" >> $logfile
+fi
+
+echo -e "Commande : ${0}" >> $logfile
+echo -e "logfile : $logfile " >> $logfile
+echo -e "\nStart at  : $(date +%Y-%m-%d_%Hh%Mm%Ss)\n" >> $logfile
+echo -e "${MEM} of memory and $NCPUS thread" >> $logfile # Corrigé la variable MEM qui n'existe pas
+echo -e "\nID manip : $id " >> $logfile
+echo -e "Rate for increase random Seq : ${rate}" >> $logfile
+echo -e "basefile : $basefile " >> $logfile
+echo -e "reads are : \n${reads1}\n${reads2}" >> $logfile
+echo -e "reads trimmed are : \n${readsTrim1}\n${readsTrim2}" >> $logfile
+echo -e "bamfile : $bamfile " >> $logfile
+echo -e "GFF3 file : $gffFile " >> $logfile
+echo -e "genomefile : $genomefile " >> $logfile
+echo -e "vcffile : $vcffile " >> $logfile
+
+# Adaptater trimming
+if [ ! -f ${readsTrim1} ]
+then
+    # Run FastQC on the resulting datasets.
+    if [ $reads2 == "" ]
+        then
+            echo -e "\n Trimming ${reads1}..." >> $logfile
+            trimmomatic PE -phred33 -threads $NCPUS ${reads1} \
+            ${reads2} \
+            ${readsTrim1} \
+            $(basename $reads1 .fastq.gz)_1unpaired.fastq.gz \
+            ILLUMINACLIP:/home/datawork-hemovir/raw/data/all_adapter.fa:2:30:10 \
+            LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
+            echo -e "Reads trim in : ${reads1%.fastq.gz}_trim.fastq.gz \n " >> $logfile
+        else
+            echo -e "\nTrimming ${reads1} and ${reads2}..." >> $logfile
+            trimmomatic PE -phred33 -threads $NCPUS \
+            ${reads1} \
+            ${reads2} \
+            ${readsTrim1} \
+            $(basename $reads1 .fastq.gz)_1unpaired.fastq.gz \
+            ${readsTrim2} \
+            $(basename $reads2 .fastq.gz)_2unpaired.fastq.gz \
+            ILLUMINACLIP:/home1/datawork/jdelmott/raw_Hemovir/adapter_Hemovir.fa:2:30:10 \
+            LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
+            echo -e "Reads1 trim in : ${readsTrim1} \n " >> $logfile
+            echo -e "Reads2 trim in : ${readsTrim2} \n " >> $logfile
+    fi
+else
+    echo -e "\nSkipped Adapter trimming" >> $logfile
+fi
+
+# Reads quality control
+if [ ! -f ${readsTrim1%.fastq.gz}_fastqc.html ]
+then
+    # Run FastQC on the trimming reads
+    if [ $reads2 == "" ]
+        then
+            echo -e "\nSecond quality controle on ${readsTrim1} (single ends)... \n" \
+            >> $logfile
+            fastqc ${readsTrim1}
+        else
+            echo -e "\nQuality controle on ${readsTrim1} and ${readsTrim2} (paired ends)... \n" \
+             >> $logfile
+            fastqc ${readsTrim1} ${readsTrim2}
+    fi
+else
+    echo -e "\nSkipped Second read quality control" >> $logfile
+fi
+
+# Aligning reads with genome OsHV1 µVar A using bowtie2
+if [ ! -f ${bamfile} ] && [ ! -f ${sortbamfile} ] && [ ! -f ${sortbamfile%.bam}_rm-dupl.bam ] && [ ! -f $mapped ]
+then
+    # Create bowtie2 index from genome file.
+    if [ ! -f ${genomefile}.1.bt2 ]
+      then
+          echo -e '\n Building genome index... \n'
+          bowtie2-build --quiet $genomefile $genomefile
+    fi
+
+    if [ "$reads2" == "" ]
+    then
+        echo -e '\nAligning single reads with genome... \n'
+        bowtie2 --quiet -p $NCPUS -x $genomefile -U $readsTrim1 | \
+            samtools view -b > $bamfile 2>>${logfile}
+        samtools flagstat $bamfile >> ${logfile}
+    else
+        echo -e '\nAligning paired reads with genome...\n'
+        bowtie2 --quiet -p $NCPUS -x $genomefile \
+        -1 ${readsTrim1} \
+        -2 ${readsTrim2} | \
+        samtools view -b > $bamfile 2>>${logfile}
+        echo -e '\n== Statistique after aligning on OsHV-1 µVar A genome ==\n' \
+        >>${logfile}
+        samtools flagstat $bamfile >> ${logfile}
+    fi
+else
+    echo -e "\nSkipped alignment" >> $logfile
+fi
+
+# sort and index bamfile
+if [ ! -f ${sortbamfile} ] && [ ! -f ${sortbamfile%.bam}_rm-dupl.bam ] && [ ! -f $mapped ]
+    then
+        echo -e "\nSorting ${sortbamfile} ...\n" >> $logfile
+        samtools sort -T $bamfile -o ${sortbamfile} $bamfile
+        samtools flagstat $sortbamfile >> $logfile
+        if [ ! -f ${sortbamfile}.bai ]
+            then
+                echo -e "\nCreating index of ${sortbamfile} ...\n" >> $logfile
+                samtools index -b ${sortbamfile} 2>> ${logfile}
+        else
+            echo -e "\nSkipped indexing" >> $logfile
+        fi
+        echo -e "\nDeleting ${bamfile} for space ...\n" >> $logfile
+#        rm $bamfile
+else
+    echo -e "\nSkipped Sorting" >> $logfile
+fi
+
+# rm bad quality reads (not developped)
+
+# remove duplicate
+if [ ! -f ${sortbamfile%.bam}_rm-dupl.bam ] && [ ! -f $mapped ]
+    then
+        echo -e "\nRemoving duplicat ${sortbamfile%.bam}_rm-duplicat.bam ...\n" \
+        >> $logfile
+        picard MarkDuplicates \
+        I=${sortbamfile} \
+        O=${sortbamfile%.bam}_rm-dupl.bam \
+        M=${sortbamfile%.bam}_MD_metrics.txt \
+        #-VALIDATION_STRINGENCY LENIENT \
+        REMOVE_DUPLICATES=true \
+        2>> ${logfile}
+        samtools sort -T ${sortbamfile%.bam}_rm-dupl.bam \
+        -o ${sortbamfile%.bam}_rm-dupl.bam \
+        ${sortbamfile%.bam}_rm-dupl.bam
+        samtools index -b ${sortbamfile%.bam}_rm-dupl.bam 2>> ${logfile}
+else
+        echo -e "\nSkipped Removing duplicat" >> $logfile
+fi
+
+# Filter mapped reads
+if [ ! -f $mapped ]
+    then
+        echo -e '\n Filtering to keep mapped reads... \n' >> ${logfile}
+        samtools view -b -h -F 4 -@ $NCPUS ${sortbamfile%.bam}_rm-dupl.bam \
+        > $mapped
+        samtools sort -T $mapped -o ${mapped%.bam}_sort.bam $mapped
+        if [ ! -f ${mapped%.bam}_sort.bam.bai ]
+            then
+                echo -e "\nCreating index of ${mapped%.bam}_sort.bam ...\n" >> $logfile
+                samtools index -b ${mapped%.bam}_sort.bam 2>> ${logfile}
+        else
+            echo -e "\nSkipped indexing" >> $logfile
+        fi
+
+        echo -e '\n Number of reads for unmapped bam.. \n' >> ${logfile}
+        samtools flagstat ${mapped%.bam}_sort.bam >> ${logfile}
+else
+        echo -e "\nSkipped filter unmapped" >> $logfile
+fi
+
+# value for initializing the loop
+total_reads=$( samtools idxstats ${mapped%.bam}_sort.bam | cut -f3 | head -n 1)
+NUM_SEQ=1000
+frac=0.01
+iteration_number=1
+echo -e "\n Initializing loop at $(date +%Y-%m-%d_%Hh%Mm%Ss)" >> $logfile
+echo -e "Random seq start at ${NUM_SEQ}" >> $logfile
+echo -e "Rate of progression = ${rate}" >> $logfile
+echo -e "Total reads on viruses = ${total_reads}" >> $logfile
+
+## Start of the loop
+while [ ${NUM_SEQ} -le $total_reads ]
+do
+  if [ ${NUM_SEQ} -gt 10000000000 ]
+  then
+    break  # Skip entire rest of loop.
+  fi
+    # Subsampling bam file
+    if [ ! -f ${NUM_SEQ}_$subsampleBam ]
+        then
+            frac=$( samtools idxstats ${mapped%.bam}_sort.bam | cut -f3 | \
+            awk 'BEGIN {total=0} {total += $1} END {frac="'"$NUM_SEQ"'"/total; if (frac > 1) {print 1} else {print frac}}' ) \
+            2>> $logfile
+            echo -e "\nSubsampling ${NUM_SEQ} reads of ${mapped%.bam}_sort.bam file (${frac}%) ... \n" \
+            >> ${logfile}
+            samtools view -bs $frac ${mapped%.bam}_sort.bam > ${NUM_SEQ}_$subsampleBam 2>> ${logfile}
+    else
+            echo -e "\nSubsampling ${NUM_SEQ} reads already done" >> $logfile
+    fi
+
+    # sort and index subsampling bamfile
+    if [ ! -f ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam ]
+        then
+            echo -e "\nSorting ${NUM_SEQ}_${subsampleBam} ...\n" >> $logfile
+            samtools sort -T ${NUM_SEQ}_$subsampleBam \
+            -o ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam ${NUM_SEQ}_$subsampleBam
+            samtools flagstat ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam >> $logfile
+            if [ ! -f ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam.bai ]
+                then
+                    echo -e "\nCreating index of ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam ...\n" \
+                     >> $logfile
+                    samtools index -b ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam 2>> ${logfile}
+            else
+                echo -e "\nSkipped indexing" >> $logfile
+            fi
+    else
+        echo -e "\nSkipped Sorting" >> $logfile
+    fi
+
+    # raw count of variants
+    if [ ! -f ${NUM_SEQ}_${alnPysamstats} ]
+        then
+            echo -e "\nFind variation in bamfile ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam ...\n" \
+            >> $logfile
+            pysamstats -f $genomefile -t variation ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam \
+            --fields=chrom,pos,ref,matches,mismatches,A,C,G,T > ${NUM_SEQ}_${alnPysamstats} #\
+            #2>> ${logfile}
+    else
+            echo -e "\nRaw count using pysamstats" >> $logfile
+    fi
+
+    # Variant calling
+    if [ ! -f ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf.gz.tbi ] && [ ! -f ${NUM_SEQ}_${ID}_ann.vcf ]
+        then
+        freebayes -f ${genomefile} --use-mapping-quality --min-repeat-entropy 1 \
+        --gvcf --haplotype-length 0 --min-alternate-count 5 --pooled-continuous \
+        --hwe-priors-off --allele-balance-priors-off \
+        -b ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam > ${NUM_SEQ}_${vcffile} #\
+        #2>> $logfile
+        # Change to allow norma etc otherwise it's bug
+        sed 's/=QR,Number=1,Type=Integer/=QR,Number=1,Type=Float/' ${NUM_SEQ}_${vcffile} \
+        > ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf
+        echo -e "\nChanging QR Type=Integer by Type=Float " >> $logfile
+        # compressions VCF
+        if [ ! -f ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf.gz ]
+            then
+                echo -e "\n ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf compress ...\n" \
+                >> $logfile
+                bgzip -c ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf \
+                > ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf.gz
+        else
+                echo -e "\n${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf already compress ..." \
+                >> $logfile
+        fi
+        # indexation VCF
+        if [ ! -f ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf.gz.tbi ]
+            then
+                echo -e "\n ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf indexed ...\n" \
+                >> $logfile
+                tabix -p vcf ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf.gz
+        else
+            echo -e "\n${NUM_SEQ}_${vcffile} already change and index ..." \
+            >> $logfile
+        fi
+    else
+        echo -e "\n ${NUM_SEQ}_${vcffile} already exist ..." >> $logfile
+    fi
+
+    ## Sort VCF
+    #### Problem unsolved : [E::vcf_parse_format] Invalid character '.' in 'QR' FORMAT field at KY242785.1:34 ###
+    #if [ ! -f ${vcffile%.vcf}_sorted.vcf.gz ] && [ ! -f ${ID}_ann.vcf ]
+    #    then
+    #        echo -e "\n ${vcffile} sorted ...\n" >> $logfile
+    #        cat ${vcffile}.gz | vcf-sort > ${vcffile%.vcf}_sorted.vcf
+    #        bgzip -c ${vcffile%.vcf}_sorted.vcf > ${vcffile%.vcf}_sorted.vcf.gz
+    #        tabix -p vcf ${vcffile%.vcf}_sorted.vcf.gz
+    #        #rm ${vcffile}.gz
+    #else
+    #    echo -e "\n${vcffile%.vcf}_sorted.vcf.gz already sorted ..." >> $logfile
+    #fi
+
+    # normalisation VCF
+    if [ ! -f ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma.vcf ] && [ ! -f ${NUM_SEQ}_${ID}_ann.vcf ]
+        then
+            echo -e "\n ${vcffile%.vcf}_sorted.vcf.gz normalize ...\n" >> $logfile
+            bcftools norm -f $genomefile \
+            ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf.gz -O v \
+            > ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma.vcf #\
+            #2>> $logfile
+    else
+        echo -e "\n${vcffile} already normalised ..." >> $logfile
+    fi
+
+    # decomplexe biallelic block substitutions and write out to decomposed_blocksub.vcf
+    if [ ! -f ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp.vcf ] && [ ! -f ${NUM_SEQ}_${ID}_ann.vcf ]
+        then
+            echo -e "\n ${vcffile} decomplexe ...\n" >> $logfile
+            vt decompose_blocksub ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma.vcf \
+            -o ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp.vcf #\
+            #2>> $logfile
+    else
+        echo -e "\n${vcffile} already decomplexed ..." >> $logfile
+    fi
+
+    # Multibreak duplicate to distinguish each effect (many effect within line)
+    if [ ! -f ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf.gz ] && [ ! -f ${NUM_SEQ}_${ID}_ann.vcf ]
+        then
+            echo -e "\nMultibreak ${vcffile}...\n" >> $logfile
+            vcfbreakmulti ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp.vcf \
+            > ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf #\
+            #2>> $logfile
+            # Compression and index
+            bgzip -c ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf \
+            > ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf.gz
+            tabix -p vcf ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf.gz
+    else
+            echo -e "\n${vcffile} already Multibreak ..." >> $logfile
+    fi
+
+    # Annotation of VCF using OsHV1 µVar A genome (gff3 modif)
+    if [ ! -f ${NUM_SEQ}_${ID}_ann.vcf ]
+      then
+        echo -e "\n Annotation du fichier VCF avec le génome de OsHV-1 ...\n" >> $logfile
+        snpEff -c /home/datawork-hemovir/env-Hemovir-longReads/share/snpeff-4.3.1t-2/snpEff.config \
+          -v OsHV-1_strain_microVar_variant_A  \
+          -stats ${NUM_SEQ}_${ID}_SnpEff_summary.html \
+          ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf.gz \
+          > ${NUM_SEQ}_${ID}_ann.vcf #\
+          #2>> $logfile
+    else
+            echo -e "\n${ID}_norma_filtred.csv table already generated ..." >> $logfile
+    fi
+
+    # Extraction of Tables
+    if [ ! -f ${NUM_SEQ}_${ID}_clean.csv ]
+        then
+            echo -e "\n ${NUM_SEQ}_${ID}_ann_clean.csv generated table ...\n" >> $logfile
+            bcftools query -f '%POS\t%REF\t%ALT\t%DP\t[%RO]\t[%AO]\t%TYPE\n' \
+            ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf.gz \
+            > ${NUM_SEQ}_${ID}_ann_clean.csv
+    else
+            echo -e "\n${NUM_SEQ}_${ID}_ann_clean.csv table already generated ..." \
+            >> $logfile
+    fi
+
+    # Writing a file for rarefaction
+    echo -e "${NUM_SEQ}\t${frac}\t${ID}\t$(grep -c "SNP" \
+     ${NUM_SEQ}_${ID}_ann_clean.csv)\t$(grep -c "REF" \
+      ${NUM_SEQ}_${ID}_ann_clean.csv)\t$(grep -c "INDEL" \
+       ${NUM_SEQ}_${ID}_ann_clean.csv)" >> ${rarefacFile}
+
+    # Deleting file from last loop
+    rm ${NUM_SEQ}_$subsampleBam \
+    ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam \
+    ${NUM_SEQ}_${subsampleBam%.bam}_sort.bam.bai \
+    ${NUM_SEQ}_${alnPysamstats} \
+    ${NUM_SEQ}_${vcffile} \
+    ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf \
+    ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf.gz \
+    ${NUM_SEQ}_${vcffile%.vcf}_cQR.vcf.gz.tbi \
+    ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma.vcf \
+    ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp.vcf \
+    ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf \
+    ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf.gz \
+    ${NUM_SEQ}_${vcffile%.vcf}_cQR_norma_decomp_multiB.vcf.gz.tbi \
+    ${NUM_SEQ}_${ID}_ann.vcf \
+    ${NUM_SEQ}_${ID}_SnpEff_summary.html \
+    ${NUM_SEQ}_${ID}_SnpEff_summary.genes.txt \
+    ${NUM_SEQ}_${ID}_ann_clean.csv
+
+    echo -e "\nIteration num ${iteration_number}" >> $logfile
+    echo -e "\n % reads completed ${frac}" >> $logfile
+    ((iteration_number=${iteration_number}+1))
+    #((NUM_SEQ=${NUM_SEQ}+${rate}))
+
+    if (( $(echo "$frac >= 1" |bc -l) )); then
+      break
+    elif (( $(echo "$frac >= 0.8" |bc -l) )); then
+      echo -e "\nAdd 20000 to the rate" >> $logfile
+      ((NUM_SEQ=${NUM_SEQ}+40000))
+    elif (( $(echo "$frac >= 0.5" |bc -l) )); then
+      echo -e "\nAdd 10000 to the rate" >> $logfile
+      ((NUM_SEQ=${NUM_SEQ}+20000))
+    elif (( $(echo "$frac >= 0.3" |bc -l) )); then
+      echo -e "\nAdd 5000 to the rate" >> $logfile
+      ((NUM_SEQ=${NUM_SEQ}+10000))
+    elif (( $(echo "$frac >= 0.1" |bc -l) )); then
+      echo -e "\nAdd 5000 to the rate" >> $logfile
+      ((NUM_SEQ=${NUM_SEQ}+${rate}+2000))
+    else
+      ((NUM_SEQ=${NUM_SEQ}+${rate}))
+    fi
+
+done
+
+echo -e "\n== Programme Ends at : $(date +%Y-%m-%d_%Hh%Mm%Ss) ==" >> $logfile
