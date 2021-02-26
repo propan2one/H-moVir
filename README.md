@@ -12,11 +12,11 @@ Login and passwords are missing in the code. The paths used in the code have als
 
 ### Previously published OsHV genome
 
-The genomes used in the study were downloaded directly from NCBI as follows:
+The virus genomes used in the study were downloaded directly from NCBI as follows:
 
 ```bash
 # Download fasta format
-OsHV_genomes_folder=/export/home/delmotte/Documents/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome
+# OsHV_genomes_folder=~/Documents/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome # exemple
 OsHV_genomes_folder=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome
 cd $OsHV_genomes_folder
 while read name id ; do
@@ -27,6 +27,20 @@ done < $OsHV_genomes_folder/genome_name_and_id.csv
 while read name id ; do
     ncbi-acc-download -F gff3 ${id} -p ${name}
 done < $OsHV_genomes_folder/genome_name_and_id.csv
+```
+
+### Host genome
+
+The Host genome used in the study were downloaded directly from NCBI as follows:
+
+```bash
+# Download fasta format
+Host_genome_folder=~/Documents/OshV-1-molepidemio/raw/c-Host-NCBI-genome # exemple
+Host_genome_folder=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome
+cd $Host_genome_folder
+id=NW_011935992.1
+name=oyster.v9
+ncbi-acc-download -F fasta ${id} -p ${name}
 ```
 
 ## Upstream analysis
@@ -52,7 +66,7 @@ while read h f; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`l
 La construction d'un génome pour chacun a été réalisée individuellement pour tous les échantillons individuellement et la commande a été exécutée comme suit à l'aide de ce script : [03-metaviromics.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/03-metaviromics.pbs)
 
 ```bash
-while read h f i ; do r1=`ls /home/datawork-hemovir/raw/illumina/${h}*_R1.fastq.gz`; r2=`ls /home/datawork-hemovir/raw/illumina/${h}*_R2.fastq.gz`; qsub -v "id=${f}, reads1=${r1},reads2=${r2}, genomefile=/home1/datawork/jdelmott/data_jean/oyster.v9.fa,database=/home1/datawork/jdelmott/data_jean/viral.2.1.genomic.fna,GenomeOsHV1=/home1/datawork/jdelmott/data_jean/OsHV-1_strain_microVar_variant_A.fasta,mincontig=200,minlength=50,outdir=/home1/scratch/jdelmott/2020-03-20-Haplofit_metaviromic,insersize=${i}" OshV-1-molepidemio/src/03-metaviromics.pbs; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
+while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R2.fastq.gz`; qsub -v "id=${f}, reads1=${r1},reads2=${r2}, genomefile=/home1/datawork/jdelmott/data_jean/oyster.v9.fa,database=/home1/datawork/jdelmott/data_jean/viral.2.1.genomic.fna,GenomeOsHV1=/home1/datawork/jdelmott/data_jean/OsHV-1_strain_microVar_variant_A.fasta,mincontig=200,minlength=50,outdir=/home1/scratch/jdelmott/2020-03-20-Haplofit_metaviromic,insersize=${i}" OshV-1-molepidemio/src/03-metaviromics.pbs; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
 ```
 
 ## Downstream analysis
