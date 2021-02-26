@@ -33,7 +33,7 @@ done < $OsHV_genomes_folder/genome_name_and_id.csv
 
 ### 00) Metadata analysis
 
-The metadata provided by the sequencing platform was cleaned up using an [00-preliminary_data.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/00-preliminary_data.Rmd). This made the file `ID_experiment.csv` synchronizing the filenames and identifiers readable.
+The metadata provided by the sequencing platform was cleaned up using an [00-preliminary_data.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/00-preliminary_data.Rmd). This made the file `ID_experiment.csv` synchronizing the filenames and identifiers readable. Subsequently, the file to use this can be found in `OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv` and the insertion size has been added by hand with the help of `libreoffice --calc`.
 
 ### 01) Data transfer
 
@@ -44,12 +44,16 @@ All data has been transferred and MD5 have been check from the servers of the tr
 The analysis of genetic diversity rarefaction was performed for all samples individually and the command was executed as follows using this script: [02-rarefaction_virus.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/02-rarefaction_virus.pbs)
 
 ```bash
-while read h f; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R2.fastq.gz`; qsub -v "rate=5000, id=${f}, reads1=${r1}, reads2=${r2}, outdir=/home1/scratch/jdelmott/2020-02-12-Rarefaction_Haplofit/, genomefile=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome/Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome_0.fa, gffFile=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome/Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome_0.gff" ~/rarefaction_virus.pbs; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
+while read h f; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R2.fastq.gz`; qsub -v "rate=5000, id=${f}, reads1=${r1}, reads2=${r2}, outdir=/home1/scratch/jdelmott/2020-02-12-Rarefaction_Haplofit/, genomefile=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome/Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome_0.fa, gffFile=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome/Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome_0.gff" OshV-1-molepidemio/src/02-rarefaction_virus.pbs; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
 ```
 
 ### 03) Assembly of the genome of the virus of interest
 
 La construction d'un génome pour chacun a été réalisée individuellement pour tous les échantillons individuellement et la commande a été exécutée comme suit à l'aide de ce script : [03-metaviromics.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/03-metaviromics.pbs)
+
+```bash
+while read h f i ; do r1=`ls /home/datawork-hemovir/raw/illumina/${h}*_R1.fastq.gz`; r2=`ls /home/datawork-hemovir/raw/illumina/${h}*_R2.fastq.gz`; qsub -v "id=${f}, reads1=${r1},reads2=${r2}, genomefile=/home1/datawork/jdelmott/data_jean/oyster.v9.fa,database=/home1/datawork/jdelmott/data_jean/viral.2.1.genomic.fna,GenomeOsHV1=/home1/datawork/jdelmott/data_jean/OsHV-1_strain_microVar_variant_A.fasta,mincontig=200,minlength=50,outdir=/home1/scratch/jdelmott/2020-03-20-Haplofit_metaviromic,insersize=${i}" OshV-1-molepidemio/src/03-metaviromics.pbs; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
+```
 
 ## Downstream analysis
 

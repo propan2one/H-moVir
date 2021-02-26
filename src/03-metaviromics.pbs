@@ -1,0 +1,969 @@
+#!/usr/bin/env bash
+#PBS -q mpi
+#PBS -l walltime=48:00:00
+#PBS -l select=1:ncpus=28:mem=115g
+
+## DESCRIPTION ##
+# Metagenomics analysis targeted viral reads
+
+## USAGE ##
+# qsub -v "id=Thau_2016_F15_filtration_ind1_PCR_metaviromic_Error_Corr,reads1=/home/datawork-hemovir/raw/illumina/NS.1258.003.IDT_i7_172---IDT_i5_172.Thau_2016_F15-ind1_R1.fastq.gz,reads2=/home/datawork-hemovir/raw/illumina/NS.1258.003.IDT_i7_172---IDT_i5_172.Thau_2016_F15-ind1_R2.fastq.gz,outdir=/home1/scratch/jdelmott/2020-02-26-Optimisation_assembly,genomefile=/home1/datawork/jdelmott/data_jean/oyster.v9.fa,database=/home1/datawork/jdelmott/data_jean/viral.2.1.genomic.fna,GenomeOsHV1=/home1/datawork/jdelmott/data_jean/OsHV-1_strain_microVar_variant_A.fasta,mincontig=200,minlength=50,insersize=397" /home1/datawork/jdelmott/Hemovir/src/metaviromics.pbs
+
+## Upload datarmor ##
+# scp metaviromics.pbs jdelmott@datarmor:/home1/datahome/jdelmott
+
+## Associated Project ##
+# DiVir & HemoVir, located in HemoVir
+
+## History ##
+# 2020-03-15 Creation du programme - derive mapped_assembly.pbs (HemoVir)
+
+## Related program ##
+#print_comment.py (HemoVir)
+
+################################ Execute script ################################
+
+cd $outdir
+MEM=114
+export PATH=$PATH:/appli/anaconda/2.7/bin
+
+# Definition of global variables
+basefile=$(basename $reads1 .fastq.gz)
+basefileReads2=$(basename $reads2 .fastq.gz)
+
+if gzip -t file.gz; then
+    echo 'file is ok'
+else 
+    echo 'file is corrupt'
+fi
+
+logfile=${basefile}_log.txt
+ID=$(basename $id)
+readsTrim1=${basefile}_trim.fastq.gz
+readsTrim2=${basefileReads2}_trim.fastq.gz
+Host_bam=${ID}_host_aligned.bam
+fileReads=${ID}_host-metrics.csv
+getUnmappedBam=${ID}_unaligned.bam
+assembledContigs=${ID}_contigs.fasta
+KRAKEN_DB=/home/ref-bioinfo/tools_data/krakenuniq/DBDIR_viral
+
+# creation du dossier de output
+if [ ! -d "$ID" ];
+then
+    mkdir $ID
+    cd $ID
+    echo "\n Creating ${ID}...\n" > $logfile
+else
+    cd $ID
+    echo -e "\n The directory ${ID} already exist $(date +%Y-%m-%d_%Hh%Mm%Ss) ...\n" \
+        >> $logfile
+fi
+
+# Pretty comment
+SOFT=/home1/datahome/jdelmott
+announcement () { python2 ${SOFT}/print_comment.py "$1" "#"; }
+
+echo -e "Commande : ${0}" >> $logfile
+echo -e "Start at  : $(date +%Y-%m-%d_%Hh%Mm%Ss)" >> $logfile
+echo -e "${MEM} of memory and $NCPUS thread" >> $logfile
+# Argument from the commande line
+echo -e "\nid=${id}" >> $logfile
+echo -e "reads1=${reads1}" >> $logfile
+echo -e "reads2=${reads2}" >> $logfile
+echo -e "outdir=${outdir}" >> $logfile
+echo -e "genomefile=${genomefile}" >> $logfile
+echo -e "database=${database}" >> $logfile
+echo -e "GenomeOsHV1=${GenomeOsHV1}" >> $logfile
+echo -e "mincontig=${mincontig}" >> $logfile
+echo -e "minlength=${minlength}" >> $logfile
+echo -e "insersize=${insersize}" >> $logfile
+
+echo -e "\nbasefile : $basefile " >> $logfile
+echo -e "The database use `grep -c '>' ${database}` sequences\n" >> $logfile
+echo -e "The number of virus in taxid is `wc -l ${taxofile}`-2 (pour les header)\n" >> $logfile
+echo -e "File for statistique : ${statistique_file}" >> $logfile
+echo -e "logfile : $logfile " >> $logfile
+echo -e "reads trimmed are : \n${readsTrim1}\n${readsTrim2}" >> $logfile
+echo -e "genomefile : $genomefile " >> $logfile
+echo -e "\nreads unmapped : $getUnmappedBam " >> $logfile
+echo -e "\nContigs assemble and clean at : ${CleanedContigs}" >> $logfile
+echo -e "\nBest result blast : ${outBlast1best}" >> $logfile
+echo -e "\nKraKen DB : ${KRAKEN_DB}" >> $logfile
+
+if [ ! -f "01-FastQC/${basefile}_fastqc.html" ] || [ -f $getUnmappedBam ]
+then
+    announcement "FastQC 1" >> $logfile
+    cd ${outdir}/${ID}
+    # env
+    source activate /home1/datawork/jdelmott/virus-discovery-pipeline
+    if [ $reads2 == "" ]
+        then
+            echo -e "\nFirst quality controle on ${reads1} (single ends)... \n" >> $logfile
+            fastqc $reads1
+        else
+            mkdir -p 01-FastQC
+            echo -e "\nFirst quality controle on ${reads1} and ${reads2} (paired ends)... \n" >> $logfile
+            fastqc $reads1 $reads2 \
+            -o 01-FastQC \
+            -t $NCPUS \
+            2>> $logfile
+
+            echo -e "====== STAT1 for raw reads ======" >> $logfile
+            echo -e "R1 ${reads1}" >> $logfile
+            seqkit stat ${reads1} >> $logfile
+            echo -e "R2 ${reads2}" >> $logfile
+            seqkit stat ${reads2} >> $logfile
+            source deactivate
+            cd ${outdir}/${ID}
+    fi
+else
+    echo -e "\nSkipped First Read quality control" >> $logfile
+fi
+
+# Adaptater trimming
+if [ ! -f "02-trimmomatic/${readsTrim1}" ]
+then
+    announcement "Trimming reads with trimomatic" >> $logfile
+    cd ${outdir}/${ID}
+    # env
+    source activate /home1/datawork/jdelmott/virus-discovery-pipeline
+    if [ $reads2 == "" ]
+        then
+            echo -e "\n Trimming ${reads1}..." >> $logfile
+            #trimmomatic PE -phred33 -threads $NCPUS ${reads1} \
+            #${reads2} \
+            #${readsTrim1} \
+            #$(basename $reads1 .fastq.gz)_1unpaired.fastq.gz \
+            #ILLUMINACLIP:/home1/datahome/jdelmott/all_adapter.fa:2:30:10 \
+            #LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
+            echo -e "Reads trim in : ${reads1%.fastq.gz}_trim.fastq.gz \n " >> $logfile
+        else
+            mkdir -p 02-trimmomatic
+            cd 02-trimmomatic
+            echo -e "\n Trimming ${reads1} and ${reads2}..." >> ${outdir}/${ID}/$logfile
+            trimmomatic PE -phred33 -threads $NCPUS \
+            ${reads1} \
+            ${reads2} \
+            ${readsTrim1} \
+            $(basename $reads1 .fastq.gz)_1unpaired.fastq.gz \
+            ${readsTrim2} \
+            $(basename $reads2 .fastq.gz)_2unpaired.fastq.gz \
+            ILLUMINACLIP:/home1/datahome/jdelmott/all_adapter.fa:2:30:10 \
+            LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50
+            echo -e "Reads1 trim in : ${outdir}/${ID}/02-trimmomatic/${readsTrim1}" \
+                >> ${outdir}/${ID}/$logfile
+            echo -e "Reads2 trim in : ${outdir}/${ID}/02-trimmomatic/${readsTrim2}" \
+                >> ${outdir}/${ID}/$logfile
+            ln -s ${outdir}/${ID}/02-trimmomatic/${readsTrim1} \
+                ${outdir}/${ID}/${readsTrim1}
+            ln -s ${outdir}/${ID}/02-trimmomatic/${readsTrim2} \
+                ${outdir}/${ID}/${readsTrim2}
+            
+            echo -e "====== STAT 2 for trimmed reads ======" >> ${outdir}/${ID}/$logfile
+            echo -e "R1 ${readsTrim1}" >> ${outdir}/${ID}/$logfile
+            seqkit stat ${readsTrim1} >> ${outdir}/${ID}/$logfile
+            echo -e "R2 ${readsTrim2}" >> ${outdir}/${ID}/$logfile
+            seqkit stat ${readsTrim2} >> ${outdir}/${ID}/$logfile
+            source deactivate
+            cd ${outdir}/${ID}
+    fi
+else
+    echo -e "\nSkipped Adapter trimming" >> $logfile
+fi
+
+if [ ! -f "01-FastQC/${basefile}_trim_fastqc.html" ];
+then
+    announcement "FastQC 2" >> $logfile
+    cd ${outdir}/${ID}
+    # env
+    source activate /home1/datawork/jdelmott/virus-discovery-pipeline
+    if [ $reads2 == "" ]
+        then
+            echo -e "\nSecond quality controle on ${reads1} (single ends)... \n" >> $logfile
+            fastqc $reads1
+        else
+            echo -e "\nSecond quality controle on ${readsTrim1} and ${readsTrim2} (paired ends)... \n" >> $logfile
+            fastqc 02-trimmomatic/${readsTrim1} \
+                02-trimmomatic/${readsTrim2} \
+                -o 01-FastQC \
+                -t $NCPUS \
+            2>> $logfile
+
+            echo -e "====== STAT1 for raw reads ======" >> $logfile
+            echo -e "R1 ${reads1}" >> $logfile
+            seqkit stat ${reads1} >> $logfile
+            echo -e "R2 ${reads2}" >> $logfile
+            seqkit stat ${reads2} >> $logfile
+            source deactivate
+            cd ${outdir}/${ID}
+    fi
+else
+    echo -e "\nSkipped First Read quality control" >> $logfile
+fi
+
+exit 0
+
+# Reads_classification
+if [ ! -f "03-Reads_classification/${ID}_unclassified.fasta" ]
+then
+    announcement "Reads classification with Kraken" >> $logfile
+    cd ${outdir}/${ID}
+    if [ ! -d 03-Reads_classification ]; then
+        mkdir 03-Reads_classification
+    fi
+    cd 03-Reads_classification
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/krakenuniq
+    # Classification
+    if [ $reads2 == "" ] ;
+        then
+            echo -e "\nError reads should be paired read (not developp yet) \n" >> $logfile
+        else
+            echo -e "\nStarting Reads classification... \n" >> ${outdir}/${ID}/$logfile
+            krakenuniq --report-file ${ID}_kraken.txt \
+                --db ${KRAKEN_DB} \
+                --gzip-compressed \
+                --unclassified-out ${ID}_unclassified.fasta \
+                --classified-out ${ID}_classified.fasta \
+                --threads $NCPUS \
+                --fastq-input \
+                --paired ${outdir}/${ID}/${readsTrim1} ${outdir}/${ID}/${readsTrim2} \
+                    2>> ${outdir}/${ID}/$logfile \
+                    &> krakenuniq_logFile.txt
+            source deactivate
+            # env
+            source activate /home1/datahome/jdelmott/conda-env/krona
+            echo -e "Create krona report..." >> ${outdir}/${ID}/$logfile
+            ktImportTaxonomy \
+                -o ${ID}_kraken_krona.html \
+                -t 7 \
+                -s 2 \
+                ${ID}_kraken.txt \
+                    2>> ${outdir}/${ID}/$logfile
+            source deactivate
+            # env
+            source activate /home1/datawork/jdelmott/virus-discovery-pipeline
+            echo -e "Extract fastq reads which match viral database..." >> ${outdir}/${ID}/$logfile
+            seqkit seq --name --only-id ${ID}_classified.fasta > ${ID}_Classified_readsName.txt
+            seqkit grep --pattern-file ${ID}_Classified_readsName.txt ${outdir}/${ID}/${readsTrim1} -o ${ID}_viral_read_1.fastq.gz
+            seqkit grep --pattern-file ${ID}_Classified_readsName.txt ${outdir}/${ID}/${readsTrim2} -o ${ID}_viral_read_2.fastq.gz
+            ln -s ${outdir}/${ID}/03-Reads_classification/${ID}_viral_read_1.fastq.gz \
+                ${outdir}/${ID}/${ID}_viral_read_1.fastq.gz
+            ln -s ${outdir}/${ID}/03-Reads_classification/${ID}_viral_read_2.fastq.gz \
+                ${outdir}/${ID}/${ID}_viral_read_2.fastq.gz
+            source deactivate
+            cd ${outdir}/${ID}
+    fi
+else
+    echo -e "\nSkipped Reads classification with krakenuniq" >> ${outdir}/${ID}/$logfile
+fi
+
+# Aligning reads on Host genome and keep others reads
+if [ ! -f "${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_unmapped_1.fastq" ] ;
+then
+    announcement "Filtering reads against Host genome" >> $logfile
+    cd ${outdir}/${ID}
+    if [ ! -d 04-Bowtie2_alignment_HOST ]; then
+        mkdir 04-Bowtie2_alignment_HOST
+    fi
+    # env
+    source activate /home1/datawork/jdelmott/virus-discovery-pipeline
+    ## Create bowtie2 index from genome file.
+    if [ ! -f ${genomefile}.1.bt2 ]
+    then
+        echo -e '\n Building genome index... \n'
+        bowtie2-build --quiet $genomefile $genomefile
+    fi
+
+    ## Aligning reads on Host genome
+    if [ ! -f "${outdir}/${ID}/04-Bowtie2_alignment_HOST/$Host_bam" ] ;
+    then
+        if [ "$reads2" == "" ] ;
+        then
+            echo -e '\nAligning single reads with genome... \n'
+            #bowtie2 \
+            #    -p $NCPUS \
+            #    -x $genomefile \
+            #    -U $readsTrim1 | \
+            #    samtools view -b > $Host_bam 2>>${logfile}
+            #samtools flagstat $Host_bam >> ${logfile}
+        else
+            echo -e '\nAligning paired reads with genome...\n'
+            bowtie2 \
+                -p $NCPUS \
+                -x $genomefile \
+                -1 ${outdir}/${ID}/${ID}_viral_read_1.fastq.gz \
+                -2 ${outdir}/${ID}/${ID}_viral_read_2.fastq.gz | \
+                samtools view -b > ${outdir}/${ID}/04-Bowtie2_alignment_HOST/$Host_bam \
+                    2>>${logfile}
+        fi
+    else
+        echo -e "\nSkipped Alignment" >> ${outdir}/${ID}/$logfile    
+    fi
+    ## Stat on the raw count of reads
+    if [ ! -f ${fileReads} ] ;
+        then
+            cd 04-Bowtie2_alignment_HOST
+            echo -e "\nCounting reads...\n" \
+            >> ${outdir}/${ID}/$logfile
+            # ID
+            # total number of alignments on library
+            # reads non align
+            # reads align on Host
+            echo -e ${ID} "\t" \
+            `samtools view -c ${outdir}/${ID}/04-Bowtie2_alignment_HOST/$Host_bam` \
+            "\t" \
+            `samtools view -c -f4 ${outdir}/${ID}/04-Bowtie2_alignment_HOST/$Host_bam` \
+            "\t" \
+            `samtools view -c -F4 ${outdir}/${ID}/04-Bowtie2_alignment_HOST/$Host_bam` \
+            > ${fileReads} 2>> ${outdir}/${ID}/$logfile
+    else
+        echo -e "\nNumber of Reads already display" >> ${outdir}/${ID}/$logfile
+    fi
+    ## Filter unmapped reads
+    if [ ! -f $getUnmappedBam ] ;
+    then
+        echo -e '\n Filtering unmapped reads... \n' >> ${outdir}/${ID}/$logfile
+        samtools view -b \
+            -h \
+            -f 4 \
+            -@ $NCPUS \
+            $Host_bam > $getUnmappedBam
+        echo -e '\n Number of reads for unmapped bam.. \n' >> ${outdir}/${ID}/$logfile
+        samtools flagstat $getUnmappedBam >> ${outdir}/${ID}/$logfile
+
+    else
+        echo -e "\nSkipped filter unmapped" >> ${outdir}/${ID}/$logfile
+    fi
+
+    ## Convert unaligned reads to fasta format
+    if [ ! -f "${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_mapped_singleton.fastq" ] ;
+    then
+        echo -e '\n converting mapped-reads.bam to fastq format... \n' >> ${outdir}/${ID}/$logfile
+        if [ "$reads2" == "" ] ;
+        then
+            echo -e "Error it should be paired reads"
+            #samtools fastq $getUnmappedBam > $unmappedFastqS
+        else
+            samtools fastq \
+            -@ $NCPUS \
+            -1 ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_unmapped_1.fastq \
+            -2 ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_unmapped_2.fastq \
+            -s ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_unmapped_singleton.fastq \
+            ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${getUnmappedBam} \
+            2>> ${outdir}/${ID}/$logfile
+            echo -e "Unaligned pair 1\t"`grep -c "^@" ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_mapped_1.fastq` \
+            >> ${outdir}/${ID}/$logfile
+            echo -e "Unaligned pair 2\t"`grep -c "^@" ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_mapped_2.fastq` \
+            >> ${outdir}/${ID}/$logfile
+            echo -e "Unaligned single\t"`grep -c "^@" ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_mapped_singleton.fastq` \
+            >> ${outdir}/${ID}/$logfile
+        fi
+    else
+        echo -e "\nSkipped bam to fastq" >> ${outdir}/${ID}/$logfile
+    fi
+    source deactivate
+    cd ${outdir}/${ID}
+else
+    echo -e "\nSkipped alignment" >> $logfile
+fi
+
+# Assembling the contigs from the mapped reads. Not Filter contigs by size.
+if [ ! -f "${outdir}/${ID}/05-MetaSPAdes_assembly/scaffolds.fasta" ] ;
+then
+    announcement "Assembly contigs with MetaSpades" >> $logfile
+    cd ${outdir}/${ID}
+    # env
+    source activate /appli/conda-env/bioinfo/spades-3.14.0
+    if [ ! -d 05-MetaSPAdes_assembly ]; then
+        mkdir 05-MetaSPAdes_assembly
+    fi
+    if [ "$reads2" == "" ] ;
+    then
+        echo -e '\nError Reads should be in paired end... \n'
+        #spades.py --only-assembler -m $MEM -t $NCPUS --s1 $unmappedFastqS -o $spadesOut &> ${basefile}_spades.log
+    else
+        if [ -s "${outdir}/${ID}/05-MetaSPAdes_assembly/spades.log" ]; then
+            echo -e '\nAssemblage continue where it fail before... \n'
+            spades.py -o 05-MetaSPAdes_assembly \
+                --restart-from last \
+                -t $NCPUS \
+                -m $MEM \
+                &> ${basefile}_spades.log
+        else
+            echo -e '\nCreating contigs with spades... \n' >> $logfile
+            spades.py \
+                --memory $MEM \
+                --only-assembler \
+                -t $NCPUS \
+                --pe1-1 ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_unmapped_1.fastq \
+                --pe1-2 ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_unmapped_2.fastq \
+                --pe1-s ${outdir}/${ID}/04-Bowtie2_alignment_HOST/${Host_bam%.bam}_unmapped_singleton.fastq \
+                --meta \
+                -o 05-MetaSPAdes_assembly &> ${basefile}_spades.log
+        fi
+        ln -f -s 05-MetaSPAdes_assembly/scaffolds.fasta $assembledContigs
+        source deactivate
+        cd ${outdir}/${ID}
+    fi
+else
+    echo -e '\nSkip assembly with metaSpades... \n' >> ${outdir}/${ID}/$logfile
+fi
+
+# Fonction to align reads with contigs
+Alignment_bowtie()
+{ 
+    # Controle parameter
+    if [ $# -eq 4 ]; then
+        echo "Alignment_bowtie function with $NCPUS CPUs"
+        echo -e "genome=$1"
+        echo -e "R1=$2"
+        echo -e "R2=$3"
+        echo -e "bamfile=$4"
+        source activate /home1/datawork/jdelmott/virus-discovery-pipeline
+    else
+        echo -e "There are $# arguments instead of 4"
+    fi
+    local genome=$(basename $1)
+    local R1=$2
+    local R2=$3
+    local bamfile=$(basename $R1 .fastq.gz).bam
+    sortBamFile=$4
+    ln -s $1 .
+    bowtie2-build -f ${genome} \
+        ${genome} \
+        >> ${outdir}/${ID}/$logfile
+    # align
+    bowtie2 \
+        -p $NCPUS \
+        -x ${genome} \
+        -1 ${R1} \
+        -2 ${R2} | \
+        samtools view -b > $bamfile \
+            2>> ${outdir}/${ID}/$logfile
+    # Sort
+    samtools sort -T $bamfile \
+        -o ${sortBamFile} \
+        $bamfile \
+        --threads $NCPUS \
+        2>> ${outdir}/${ID}/$logfile
+    # Index
+    samtools index \
+        -b ${sortBamFile} \
+        2>> ${outdir}/${ID}/$logfile
+    source deactivate
+}
+
+# Fonction to polish assembly
+Polishing_assembly()
+{ 
+    # Controle parameter
+    if [ $# -eq 3 ]; then
+        echo "Polishing assembly function with $NCPUS CPUs"
+        echo -e "genome=$1"
+        echo -e "Frags=$2"
+        echo -e "out=$3"
+        source activate /home1/datahome/jdelmott/conda-env/pilon
+    else
+        echo -e "There are $# arguments instead of 3"
+    fi
+    local genome=$(basename $1)
+    local Frags=$(basename $2)
+    local out=$3
+    #outfile=$4
+    ln -s $1 .
+    ln -s $2 .
+    #pilon \
+    /home1/datahome/jdelmott/conda-env/pilon/bin/java -Xms512m -Xmx150g -jar \
+    /home1/datahome/jdelmott/conda-env/pilon/share/pilon-1.23-2/pilon-1.23.jar \
+        --genome ${genome} \
+        --frags ${Frags} \
+        --threads $NCPUS \
+        --verbose \
+        --vcf \
+        --output ${out}_contigs \
+        --outdir $out \
+        &> ${basefile}_pilon_logfile.log \
+        2>> ${outdir}/${ID}/$logfile
+    source deactivate
+}
+
+### Bining
+#if [ ! -f "${outdir}/${ID}/07-Binning_contigs/" ] ;
+#then
+#    announcement "Binning contigs with Concoct" >> $logfile
+#    cd ${outdir}/${ID}
+#    mkdir 07-Binning_contigs
+#    cd 07-Binning_contigs
+#    if [ ! -f "${outdir}/${ID}/07-Binning_contigs/ReAligneContigs.bam" ] ;
+#    then
+#        Alignment_bowtie "${outdir}/${ID}/${ID}_oshv_contigs.fasta" \
+#            "${outdir}/${ID}/${ID}_viral_read_1.fastq.gz" \
+#            "${outdir}/${ID}/${ID}_viral_read_2.fastq.gz" \
+#            "ReAligneContigs.bam"
+#        ReAligneContigs_sorted=ReAligneContigs_sorted.bam
+#
+#    fi
+#else
+#    echo -e "\nSkipped Bining ${ID}_oshv_contigs.fasta using Concoct" >> ${outdir}/${ID}/$logfile   
+#fi
+
+## Select specific contig from OsHV-1
+if [ ! -f "${outdir}/${ID}/06-Blast_oshv/${ID}_oshv_contigs.fasta" ] ;
+then
+    announcement "Blast contigs against (basename $GenomeOsHV1)" >> $logfile
+    cd ${outdir}/${ID}
+    if [ ! -d 06-Blast_oshv ]; then
+            mkdir 06-Blast_oshv
+    fi
+    cd 06-Blast_oshv
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/blast
+    ln -f -s ${outdir}/${ID}/${spadesOut}/05-MetaSPAdes_assembly/scaffolds.fasta $assembledContigs
+    evalue=0.000001
+    echo -e "\nBlast ${ID}_oshv_contigs.fasta with evalue=${evalue}\n" >> ${outdir}/${ID}/$logfile
+    makeblastdb -in $assembledContigs -parse_seqids -dbtype nucl
+    blastn \
+        -query $GenomeOsHV1 \
+        -db $assembledContigs \
+        -num_threads $NCPUS \
+        -outfmt "6 sacc" \
+        -evalue $evalue \
+        -out ${ID}_ContigList.txt
+        sort -u ${ID}_ContigList.txt > ${ID}_ContigList_uniq.txt
+    source deactivate
+    source activate /home1/datawork/jdelmott/virus-discovery-pipeline
+    seqkit grep --pattern-file ${ID}_ContigList_uniq.txt ${assembledContigs} -o ${ID}_oshv_contigs.fasta
+    ln -f -s ${outdir}/${ID}/06-Blast_oshv/${ID}_oshv_contigs.fasta \
+        ${outdir}/${ID}/${ID}_oshv_contigs.fasta
+    source deactivate
+    cd ${outdir}/${ID}
+else
+    echo -e "\nSkipped Blast ${ID}_oshv_contigs.fasta with evalue=${evalue}" >> ${outdir}/${ID}/$logfile
+fi
+
+# Extension contigs 
+if [ ! -f "${outdir}/${ID}/07-Extend_contigs/${ID}_oshv_contigs_extend/${ID}_oshv_contigs_extend.final.scaffolds.fasta" ] ;
+then
+    announcement "Contig Extension with SSPACE" >> $logfile
+    cd ${outdir}/${ID}
+    if [ ! -d 07-Extend_contigs ]; then
+        mkdir 07-Extend_contigs
+    fi
+    cd 07-Extend_contigs
+    # env, non classique
+    . /appli/bioinfo/sspace-standard/3.0/env.sh
+    echo -e "\nExtend ${ID}_oshv_contigs.fasta using SSPACE \n" >> ${outdir}/${ID}/$logfile #### Changé assembledContigs par les contigs séléctionné de 06
+    ln -f -s ${outdir}/${ID}/06-Blast_oshv/${ID}_oshv_contigs.fasta .
+    echo -e "lib1 bowtie ${outdir}/${ID}/${readsTrim1} ${outdir}/${ID}/${readsTrim2} ${insersize} 0.25 FR" > libraries.txt
+    perl /appli/bioinfo/sspace-standard/3.0/SSPACE-STANDARD-3.0_linux-x86_64/SSPACE_Standard_v3.0.pl \
+        -T $NCPUS \
+        -l libraries.txt \
+        -s ${ID}_oshv_contigs.fasta \
+        -b ${ID}_oshv_contigs_extend \
+        &> SSPACE_logFile.txt
+    ln -f -s ${outdir}/${ID}/07-Extend_contigs/${ID}_oshv_contigs_extend/${ID}_oshv_contigs_extend.final.scaffolds.fasta \
+        ${outdir}/${ID}/${ID}_oshv_extend_contigs.fasta
+    source deactivate
+    cd ${outdir}/${ID}
+else
+    echo -e "\nSkipped Contig Extension" >> ${outdir}/${ID}/$logfile   
+fi
+
+## Merge contigs 
+#if [ ! -f "${outdir}/${ID}/08-Cap3_merge_contigs/${ID}_oshv_extend_contigs_merge.fasta" ] ;
+#then
+#    announcement "Merge Contigs match OsHV-1 (basename $GenomeOsHV1)" >> $logfile
+#    cd ${outdir}/${ID}
+#    if [ ! -d 08-Cap3_merge_contigs ]; then
+#        mkdir 08-Cap3_merge_contigs
+#    fi
+#    cd 08-Cap3_merge_contigs
+#    # env
+#    source activate /home1/datahome/jdelmott/conda-env/cap3
+#    echo -e "\nMerge ${ID}_oshv_contigs.fasta using Cap3 \n" >> ${outdir}/${ID}/$logfile #### Changé assembledContigs par les contigs séléctionné de 06
+#    ln -f -s ${outdir}/${ID}/${ID}_oshv_extend_contigs.fasta .
+#    grep -e ">" ${ID}_oshv_extend_contigs.fasta > Contigs_name_before_cap3.txt
+#    cap3 ${ID}_oshv_extend_contigs.fasta \
+#        >> cap3_logfile.log \
+#        2>> ${outdir}/${ID}/$logfile
+#    cat ${ID}_oshv_extend_contigs.fasta.cap.contigs > ${ID}_oshv_extend_contigs_merge.fasta
+#    cat ${ID}_oshv_extend_contigs.fasta.cap.singlets >> ${ID}_oshv_extend_contigs_merge.fasta
+#    grep -e ">" ${ID}_oshv_extend_contigs_merge.fasta > Contigs_name_after_cap3.txt
+#    ln -f -s ${outdir}/${ID}/08-Cap3_merge_contigs/${ID}_oshv_extend_contigs_merge.fasta \
+#        ${outdir}/${ID}/${ID}_oshv_extend_contigs_merge.fasta
+#    source deactivate
+#    cd ${outdir}/${ID}
+#else
+#    echo -e "\nSkipped Merge ${ID}_oshv_contigs.fasta using Cap3" >> ${outdir}/${ID}/$logfile
+#fi
+
+# Polishing assembly 01
+if [ ! -d "${outdir}/${ID}/09-Pilon_polishing/" ] ;
+then
+    announcement "Polishing contigs N°01" >> $logfile
+    cd ${outdir}/${ID}
+    if [ ! -d 09-Pilon_polishing ]; then
+        mkdir 09-Pilon_polishing
+    fi
+    cd 09-Pilon_polishing
+    if [ ! -f "${outdir}/${ID}/09-Pilon_polishing/ReAligneContigs.bam" ] ;
+    then
+        # Aligning reads with de novo assembly genome of Oshv1
+        ln -f -s ${outdir}/${ID}/07-Extend_contigs/${ID}_oshv_contigs_extend/${ID}_oshv_contigs_extend.final.scaffolds.fasta . # modif - cap3 pb
+        # modif - cap3 pb
+        Alignment_bowtie "${ID}_oshv_contigs_extend.final.scaffolds.fasta" \
+            "${outdir}/${ID}/${readsTrim1}" \
+            "${outdir}/${ID}/${readsTrim2}" \
+            "Polishing_01.bam"
+        Polishing_01=Polishing_01.bam
+        # Aligning reads with de novo assembly genome of Oshv1  # modif arg1 - cap3 pb
+        Polishing_assembly "${ID}_oshv_contigs_extend.final.scaffolds.fasta" \
+            $Polishing_01 \
+            "Polishing_assembly_01"
+        ln -f -s ${outdir}/${ID}/09-Pilon_polishing/Polishing_assembly_01/Polishing_assembly_01_contigs.fasta \
+            ${outdir}/${ID}/${ID}.fasta
+        source deactivate
+        cd ${outdir}/${ID}
+    fi
+else
+    echo -e "\nSkipped Polishing" >> ${outdir}/${ID}/$logfile   
+fi
+
+# Genome assembly
+if [ ! -d 10-Genome_evaluation ]; then
+    announcement "Evaluation genome assembly with Quast" >> $logfile
+    cd ${outdir}/${ID}
+    # env
+    source activate /appli/conda-env/bioinfo/quast-5.0.2
+    quast \
+        ${outdir}/${ID}/${ID}.fasta \
+        ${outdir}/${ID}/${ID}_oshv_extend_contigs.fasta \
+        ${outdir}/${ID}/${ID}_oshv_contigs.fasta \
+        ${outdir}/${ID}/$assembledContigs \
+        -r ${GenomeOsHV1} \
+        -o 10-Genome_evaluation \
+        &>> $logfile
+        #${outdir}/${ID}/${ID}_oshv_extend_contigs_merge.fasta \ # modif - cap3 pb
+    source deactivate
+else
+    echo -e "\nGenome assembly done !" >> ${outdir}/${ID}/$logfile   
+    
+fi
+
+# MSA
+if [ ! -d 11-MSA ]; then
+    announcement "Multiple sequence alignment with MAFFT" >> $logfile
+    cd ${outdir}/${ID}
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/seqkit
+    mkdir 11-MSA
+    cd 11-MSA
+    cat $GenomeOsHV1 > multiple_fasta.fa
+    seqkit seq -m 1500 ${outdir}/${ID}/${ID}_oshv_contigs.fasta | sed 's/>/>blast_out_/' >> multiple_fasta.fa
+    seqkit seq -m 1500 ${outdir}/${ID}/${ID}_oshv_extend_contigs.fasta | sed 's/>/>sspace_out_/' >> multiple_fasta.fa # after SSPACE
+    #seqkit seq -m 1500 ${outdir}/${ID}/${ID}_oshv_extend_contigs_merge.fasta | sed 's/>/>cap3_out_/' >> multiple_fasta.fa # after cap3  # modif - cap3 pb
+    seqkit seq -m 1500 ${outdir}/${ID}/${ID}.fasta | sed 's/>/>pilon_out_/' >> multiple_fasta.fa # final after pilon
+    seqkit sort -l multiple_fasta.fa > multiple_fasta_sort.fa
+    source deactivate
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/mafft
+    mafft \
+        --thread $NCPUS \
+        --auto \
+        multiple_fasta_sort.fa \
+        > ${ID}_MSA.fna \
+        2>> ${outdir}/${ID}/$logfile
+    source deactivate
+    cd ${outdir}/${ID}
+else
+    echo -e "\nMSA with MAFFT already done !" >> ${outdir}/${ID}/$logfile   
+    
+fi
+
+if [ ! -d 12-OsHV-MSA ]; then
+    announcement "Multiple sequence on NR OsHV genome using MAFFT" >> $logfile
+    cd ${outdir}/${ID}
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/seqkit
+    mkdir 12-OsHV-MSA
+    cd 12-OsHV-MSA
+    seqkit seq -m 1500 ${outdir}/${ID}/${ID}.fasta | sed 's/>/>pilon_out_/' >> pilon.fa # final after pilon
+    source deactivate
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/mafft
+    ln -s -f /home1/datawork/jdelmott/raw_Hemovir/MSA_NR_genomes_OsHV.fna .
+    mafft \
+        --add pilon.fa \
+        --reorder MSA_NR_genomes_OsHV.fna \
+        > ${ID}_NR_genome.fna
+    source deactivate
+    cd ${outdir}/${ID}
+else
+    echo -e "\nMSA with MAFFT already done !" >> ${outdir}/${ID}/$logfile   
+    
+fi
+
+if [ ! -d 13-Spades_contigs-MSA ]; then
+    announcement "Multiple sequence on NR OsHV genome using scaffold > 3300 after Metaspades" >> $logfile
+    cd ${outdir}/${ID}
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/seqkit
+    mkdir 13-Spades_contigs-MSA
+    cd 13-Spades_contigs-MSA
+    seqkit seq -m 5000 ${outdir}/${ID}/${ID}_oshv_contigs.fasta | sed 's/>/>blast_/' >> multiple_contigs_fasta.fa
+    seqkit split -i multiple_contigs_fasta.fa
+    cd multiple_contigs_fasta.fa.split
+    for file in *.fa
+    do
+        seqkit seq -r -p $file > ${file%.fasta}_rev_comp.fasta
+        sed -i 's/>/>RevComp_/' ${file%.fasta}_rev_comp.fasta
+    done
+    cd ${outdir}/${ID}/13-Spades_contigs-MSA
+    cat multiple_contigs_fasta.fa.split/* >> ${ID}_MSA_contigs.fna
+    source deactivate
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/mafft
+    ln -s -f /home1/datawork/jdelmott/raw_Hemovir/MSA_NR_genomes_OsHV.fna .
+    mafft \
+        --add ${ID}_MSA_contigs.fna \
+        --reorder MSA_NR_genomes_OsHV.fna \
+        > ${ID}_NR_genome_contigs.faa
+    source deactivate
+    cd ${outdir}/${ID}
+else
+    echo -e "\nMSA with MAFFT already done !" >> ${outdir}/${ID}/$logfile   
+fi
+
+if [ ! -d 14-Spades_contigs_raw-MSA ]; then
+    announcement "Multiple sequence on NR OsHV genome using contig > 2000 after Metaspades" >> $logfile
+    cd ${outdir}/${ID}    
+    mkdir 14-Spades_contigs_raw-MSA
+    cd 14-Spades_contigs_raw-MSA
+    ln -s -f ${outdir}/${ID}/05-MetaSPAdes_assembly/contigs.fasta .
+    evalue=0.0001
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/blast
+    makeblastdb -in contigs.fasta -parse_seqids -dbtype nucl
+    blastn \
+        -query $GenomeOsHV1 \
+        -db contigs.fasta \
+        -num_threads $NCPUS \
+        -outfmt "6 sacc" \
+        -evalue $evalue \
+        -out ${ID}_ContigList.txt
+        sort -u ${ID}_ContigList.txt > ${ID}_ContigList_uniq.txt
+    source deactivate
+    source activate /home1/datahome/jdelmott/conda-env/seqkit
+    seqkit grep --pattern-file ${ID}_ContigList_uniq.txt contigs.fasta -o ${ID}_oshv_contigs.fasta
+    seqkit seq -m 2000 ${ID}_oshv_contigs.fasta > ${ID}_cutoff2000.fasta
+    seqkit split -i ${ID}_cutoff2000.fasta
+    cd ${ID}_cutoff2000.fasta.split/
+    for file in *.fasta
+    do
+        seqkit seq -r -p $file > ${file%.fasta}_revers_comp.fa
+        sed -i "s/>/>Rev_comp_/" ${file%.fasta}_revers_comp.fa
+    done
+    cat * >> ${outdir}/${ID}/14-Spades_contigs_raw-MSA/${ID}_MSA_contigs_raw.fna
+    cd ${outdir}/${ID}/14-Spades_contigs_raw-MSA/
+    ln -s -f /home1/datawork/jdelmott/raw_Hemovir/MSA_NR_genomes_OsHV.fna .
+    source deactivate
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/mafft
+    mafft \
+        --add ${ID}_MSA_contigs_raw.fna \
+        --reorder MSA_NR_genomes_OsHV.fna \
+        > ${ID}_NR_genome_contigs_raw.faa
+    source deactivate
+fi
+
+if [ ! -d 15-Spades_contigs_raw-MSA_contig3000 ]; then
+    announcement "Multiple sequence on NR OsHV genome using contig > 2000 after Metaspades" >> $logfile
+    cd ${outdir}/${ID}    
+    mkdir 15-Spades_contigs_raw-MSA_contig3000
+    cd 15-Spades_contigs_raw-MSA_contig3000
+    ln -s -f ${outdir}/${ID}/05-MetaSPAdes_assembly/contigs.fasta .
+    evalue=0.0001
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/blast
+    makeblastdb -in contigs.fasta -parse_seqids -dbtype nucl
+    blastn \
+        -query $GenomeOsHV1 \
+        -db contigs.fasta \
+        -num_threads $NCPUS \
+        -outfmt "6 sacc" \
+        -evalue $evalue \
+        -out ${ID}_ContigList.txt
+        sort -u ${ID}_ContigList.txt > ${ID}_ContigList_uniq.txt
+    source deactivate
+    source activate /home1/datahome/jdelmott/conda-env/seqkit
+    seqkit grep --pattern-file ${ID}_ContigList_uniq.txt contigs.fasta -o ${ID}_oshv_contigs.fasta
+    seqkit seq -m 3000 -M 4000 ${ID}_oshv_contigs.fasta > ${ID}_cutoff2k-3k.fasta
+    seqkit split -i ${ID}_cutoff2k-3k.fasta
+    cd ${ID}_cutoff2k-3k.fasta.split/
+    for file in *.fasta
+    do
+        seqkit seq -r -p $file > ${file%.fasta}_revers_comp.fa
+        sed -i "s/>/>Rev_comp_/" ${file%.fasta}_revers_comp.fa
+    done
+    cat * >> ${outdir}/${ID}/15-Spades_contigs_raw-MSA_contig3000/${ID}_MSA_contigs_raw_2k-3k.fna
+    cd ${outdir}/${ID}/15-Spades_contigs_raw-MSA_contig3000/
+    ln -s -f /home1/datawork/jdelmott/raw_Hemovir/MSA_NR_genomes_OsHV.fna .
+    source deactivate
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/mafft
+    mafft \
+        --add ${ID}_MSA_contigs_raw_2k-3k.fna \
+        --reorder MSA_NR_genomes_OsHV.fna \
+        > ${ID}_NR_genome_contigs_raw_2k-3k.faa
+    source deactivate
+fi
+
+if [ ! -d 16-Spades_contigs_raw-MSA_contig2000 ]; then
+    announcement "Multiple sequence on NR OsHV genome using contig > 2000 after Metaspades" >> $logfile
+    cd ${outdir}/${ID}    
+    mkdir 16-Spades_contigs_raw-MSA_contig2000
+    cd 16-Spades_contigs_raw-MSA_contig2000
+    ln -s -f ${outdir}/${ID}/05-MetaSPAdes_assembly/contigs.fasta .
+    evalue=0.0001
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/blast
+    makeblastdb -in contigs.fasta -parse_seqids -dbtype nucl
+    blastn \
+        -query $GenomeOsHV1 \
+        -db contigs.fasta \
+        -num_threads $NCPUS \
+        -outfmt "6 sacc" \
+        -evalue $evalue \
+        -out ${ID}_ContigList.txt
+        sort -u ${ID}_ContigList.txt > ${ID}_ContigList_uniq.txt
+    source deactivate
+    source activate /home1/datahome/jdelmott/conda-env/seqkit
+    seqkit grep --pattern-file ${ID}_ContigList_uniq.txt contigs.fasta -o ${ID}_oshv_contigs.fasta
+    seqkit seq -m 2000 -M 3000 ${ID}_oshv_contigs.fasta > ${ID}_cutoff2k-3k.fasta
+    seqkit split -i ${ID}_cutoff2k-3k.fasta
+    cd ${ID}_cutoff2k-3k.fasta.split/
+    for file in *.fasta
+    do
+        seqkit seq -r -p $file > ${file%.fasta}_revers_comp.fa
+        sed -i "s/>/>Rev_comp_/" ${file%.fasta}_revers_comp.fa
+    done
+    cat * >> ${outdir}/${ID}/16-Spades_contigs_raw-MSA_contig2000/${ID}_MSA_contigs_raw_2k-3k.fna
+    cd ${outdir}/${ID}/16-Spades_contigs_raw-MSA_contig2000/
+    ln -s -f /home1/datawork/jdelmott/raw_Hemovir/MSA_NR_genomes_OsHV.fna .
+    source deactivate
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/mafft
+    mafft \
+        --add ${ID}_MSA_contigs_raw_2k-3k.fna \
+        --reorder MSA_NR_genomes_OsHV.fna \
+        > ${ID}_NR_genome_contigs_raw_2k-3k.maf
+    source deactivate
+fi
+
+## Polishing assembly 02
+#if [ ! -f "${outdir}/${ID}/09-Pilon_polishing/" ] ;
+#then
+#    announcement "Polishing contigs N°01" >> $logfile
+#    cd ${outdir}/${ID}
+#    mkdir 09-Pilon_polishing
+#    cd 09-Pilon_polishing
+#    if [ ! -f "${outdir}/${ID}/09-Pilon_polishing/ReAligneContigs.bam" ] ;
+#    then
+#        # Aligning reads with de novo assembly genome of Oshv1
+#        ln -f -s ${outdir}/${ID}/08-Cap3_merge_contigs/${ID}_oshv_extend_contigs_merge.fasta .
+#        Alignment_bowtie "${ID}_oshv_contigs_merge.fasta" \
+#            "${outdir}/${ID}/${readsTrim1}" \
+#            "${outdir}/${ID}/${readsTrim2}" \
+#            "Polishing_01.bam"
+#        Polishing_01=Polishing_01.bam
+#        # Aligning reads with de novo assembly genome of Oshv1
+#        Polishing_assembly "${ID}_oshv_contigs_merge.fasta" \
+#            $Polishing_01 \
+#            "Polishing_assembly_01"
+#    fi
+#else
+#    echo -e "\nSkipped Polishing" >> ${outdir}/${ID}/$logfile   
+#fi
+
+# Extension contigs 
+if [ ! -d "${outdir}/${ID}/R02-Extend_contigs_selected_contigs" ] ;
+then
+    announcement "Contig Extension with SSPACE on selected contigs" >> $logfile
+    cd ${outdir}/${ID}
+    if [ ! -d R02-Extend_contigs_selected_contigs ]; then
+        mkdir R02-Extend_contigs_selected_contigs
+    fi
+    cd R02-Extend_contigs_selected_contigs
+    # env, non classique
+    . /appli/bioinfo/sspace-standard/3.0/env.sh
+    echo -e "\nExtend ${ID}_selected_contigs.fasta using SSPACE \n" >> ${outdir}/${ID}/$logfile #### Changé assembledContigs par les contigs séléctionné de 06
+    cat ${outdir}/${ID}/R01-${ID%_noPCR}_selected_contigs/*.fasta >> ${ID}_selected_contigs.fasta
+    echo -e "lib1 bowtie ${outdir}/${ID}/${readsTrim1} ${outdir}/${ID}/${readsTrim2} ${insersize} 0.25 FR" > libraries.txt
+    perl /appli/bioinfo/sspace-standard/3.0/SSPACE-STANDARD-3.0_linux-x86_64/SSPACE_Standard_v3.0.pl \
+        -T $NCPUS \
+        -l libraries.txt \
+        -s ${ID}_selected_contigs.fasta \
+        -b ${ID}_selected_contigs_extend \
+        &> SSPACE_logFile.txt
+    ln -f -s ${outdir}/${ID}/R02-Extend_contigs_selected_contigs/${ID}_selected_contigs_extend/${ID}_selected_contigs_extend.final.scaffolds.fasta \
+        ${outdir}/${ID}/${ID}_selected_contigs_extend.fasta
+    source deactivate
+    cd ${outdir}/${ID}
+else
+    echo -e "\nSkipped Contig Extension" >> ${outdir}/${ID}/$logfile   
+fi
+
+# Polishing assembly 01
+if [ ! -d "${outdir}/${ID}/R03-Pilon_polishing_selected/" ] ;
+then
+    announcement "Polishing contigs N°01" >> $logfile
+    cd ${outdir}/${ID}
+    if [ ! -d R03-Pilon_polishing_selectd ]; then
+        mkdir R03-Pilon_polishing_selectd
+    fi
+    cd R03-Pilon_polishing_selectd
+    if [ ! -f "${outdir}/${ID}/R03-Pilon_polishing_selectd/ReAligneContigs.bam" ] ;
+    then
+        # Aligning reads with de novo assembly genome of Oshv1
+        ln -f -s ${outdir}/${ID}/R02-Extend_contigs_selected_contigs/${ID}_selected_contigs_extend/${ID}_selected_contigs_extend.final.scaffolds.fasta ${ID}_selected_contigs_extend.fasta
+        Alignment_bowtie "${outdir}/${ID}/${ID}_selected_contigs_extend.fasta" \
+            "${outdir}/${ID}/${readsTrim1}" \
+            "${outdir}/${ID}/${readsTrim2}" \
+            "Polishing_01.bam"
+        Polishing_01=Polishing_01.bam
+        # Aligning reads with de novo assembly genome of OsHV1
+        Polishing_assembly "${ID}_selected_contigs_extend.fasta" \
+            $Polishing_01 \
+            "Polishing_assembly_selected_01"
+        sed -i "s/>/>${ID}_pilon" Polishing_assembly_selected_01_contigs.fasta
+        ln -f -s ${outdir}/${ID}/R03-Pilon_polishing_selectd/Polishing_assembly_selected_01/Polishing_assembly_selected_01_contigs.fasta \
+            ${outdir}/${ID}/${ID}_NR-genome.fasta
+        source deactivate
+        cd ${outdir}/${ID}
+    fi
+else
+    echo -e "\nSkipped Polishing" >> ${outdir}/${ID}/$logfile   
+fi
+
+if [ ! -d 17-Assembly-realign_oshv ]; then
+    announcement "Multiple sequence on NR OsHV on assembly NR genome" >> $logfile
+    ##Ajouté un truc pour caster Ul-TRl-X-TRs et Us ensemble avant l'alignement
+    cd ${outdir}/${ID}
+    # env
+    source activate /home1/datahome/jdelmott/conda-env/mafft
+    ln -f -s ${outdir}/${ID}/R03-Pilon_polishing_selectd/Polishing_assembly_selected_01/Polishing_assembly_selected_01_contigs.fasta ${ID}_NR-genome.fasta
+    ln -s -f /home1/datawork/jdelmott/raw_Hemovir/MSA_NR_genomes_OsHV.fna .
+    cat ${outdir}/${ID}/R01-${ID%_noPCR}_selected_contigs/*.fasta >> ${ID}_NR-genome_selected.fasta
+    cat ${ID}_NR-genome.fasta >> ${ID}_NR-genome_selected.fasta
+    mafft \
+        --add ${ID}_NR-genome_selected.fasta \
+        --reorder MSA_NR_genomes_OsHV.fna \
+        > ${ID}_NR_genome_contigs_selected.maf
+    source deactivate
+    cd ${outdir}/${ID}
+else
+    echo -e "\nMSA with MAFFT already done !" >> ${outdir}/${ID}/$logfile   
+fi
+
+announcement "Programme Ends at : $(date +%Y-%m-%d_%Hh%Mm%Ss)" >> $logfile
