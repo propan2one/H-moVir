@@ -88,3 +88,11 @@ while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2
 ## Downstream analysis
 
 fix: NR-genome construction on part 3 instead of part 4
+
+### 05) Genome cleaning
+
+### 06) Phylogenetic analysis
+
+### 07) Non redundant consensus generation
+
+### 08)
