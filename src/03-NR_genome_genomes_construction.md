@@ -1,4 +1,4 @@
-# 04) Creation of NR-genomes
+# 03) Creation of NR-genomes
 
 - In a first step, the sequences were analyzed on Ugene with a dotplot of the sequence against itself to identify the different structures of the genomes (min length 40, repeats identity 95 %). Each repetition was manually annotated as follows: 1-Ul, 2-IRl, 3-X, 4-IRs, 5-Us. 
 
