@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#PBS -q omp
+#PBS -l ncpus=16
+#PBS -l mem=110gb
+#PBS -l walltime=05:00:00
+
+## DESCRIPTION ##
+# Metagenomics analysis targeted viral reads
+
+## USAGE ##
+# qsub -v "outdir=,MSNA=,output=msa_mafft_dna.fna" /home1/datawork/jdelmott/Hemovir/src/mafft_MSNA.pbs
+
+## History ##
+# 2020-03-29 Creation du programme
+
+################################ Execute script ################################
+export PATH=/appli/anaconda/3.7/bin/:$PATH
+source activate /home1/datahome/jdelmott/conda-env/mafft
+cd $outdir
+logfile=mafft_logFile.txt
+
+echo -e "Commande : ${0}" > $logfile
+echo -e "Start at  : $(date +%Y-%m-%d_%Hh%Mm%Ss)\n" >> $logfile
+echo -e "outdir=${outdir}" >> $logfile
+echo -e "MSNA=${MSNA}" >> $logfile
+echo -e "output=${output}\n" >> $logfile
+
+if [ ! -f $output ]
+then
+    echo -e '\n Multiple Sequence Alignment... \n' >> $logfile
+    mafft \
+        --thread $NCPUS \
+        --auto \
+        $MSNA \
+        > $output \
+        2>> $logfile
+#        --ep 0.15 \
+else
+    echo -e '\n Multiple Sequence Alignment already exist' >> $logfile
+fi
