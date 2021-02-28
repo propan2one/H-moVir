@@ -7,19 +7,13 @@
 # Metagenomics analysis targeted viral reads
 
 ## USAGE ##
-# qsub -v "id=,reads1=,reads2=,outdir=,genomefile=host.fa,database=,GenomeOsHV1=virus.fa,mincontig=200,minlength=50,insersize=397" OshV-1-molepidemio/src/03-metaviromics.pbs
-
-## Upload datarmor ##
-# scp metaviromics.pbs jdelmott@datarmor:/home1/datahome/jdelmott
-
-## Associated Project ##
-# DiVir & HemoVir, located in HemoVir
+# qsub -v "id=,reads1=,reads2=,outdir=,genomefile=host.fa,database=,GenomeOsHV1=virus.fa,mincontig=200,minlength=50,insersize=397" OshV-1-molepidemio/src/04-metaviromics.pbs
 
 ## History ##
 # 2020-03-15 Creation du programme - derive mapped_assembly.pbs (HemoVir)
 
 ## Related program ##
-#print_comment.py (HemoVir)
+#print_comment.py (From metaWRAP)
 
 ################################ Execute script ################################
 
