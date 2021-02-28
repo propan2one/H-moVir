@@ -16,7 +16,7 @@ The virus genomes used in the study were downloaded directly from NCBI as follow
 
 ```bash
 # Download fasta format
-# OsHV_genomes_folder=~/Documents/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome # exemple
+#OsHV_genomes_folder=~/Documents/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome # exemple
 OsHV_genomes_folder=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome
 cd $OsHV_genomes_folder
 while read name id ; do
@@ -35,7 +35,7 @@ The Host genome used in the study were downloaded directly from NCBI as follows:
 
 ```bash
 # Download fasta format
-Host_genome_folder=~/Documents/OshV-1-molepidemio/raw/c-Host-NCBI-genome # exemple
+#Host_genome_folder=~/Documents/OshV-1-molepidemio/raw/c-Host-NCBI-genome # exemple
 Host_genome_folder=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome
 cd $Host_genome_folder
 id=NW_011935992.1
@@ -47,7 +47,7 @@ ncbi-acc-download -F fasta ${id} -p ${name}
 
 ### 00) Metadata analysis
 
-The metadata provided by the sequencing platform was cleaned up using an [00-preliminary_data.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/00-preliminary_data.Rmd). This made the file `ID_experiment.csv` synchronizing the filenames and identifiers readable. Subsequently, the file to use this can be found in `OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv` and the insertion size has been added by hand with the help of `libreoffice --calc`.
+The metadata provided by the sequencing platform was cleaned up using an [00-preliminary_data.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/00-preliminary_data.Rmd). This made the file `ID_experiment.csv` synchronizing the filenames and identifiers readable. Subsequently, the file to use can be found in `OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv` and the insertion size has been added by hand with the help of `libreoffice --calc`.
 
 ### 01) Data transfer
 
@@ -63,11 +63,20 @@ while read h f; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`l
 
 ### 03) Assembly of the genome of the virus of interest
 
-La construction d'un génome pour chacun a été réalisée individuellement pour tous les échantillons individuellement et la commande a été exécutée comme suit à l'aide de ce script : [03-metaviromics.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/03-metaviromics.pbs)
+The construction of a genome for each was carried out for all samples individually and the command was executed as follows using this script: [03-metaviromics.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/03-metaviromics.pbs)
 
 ```bash
 while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R2.fastq.gz`; qsub -v "id=${f}, reads1=${r1},reads2=${r2}, genomefile=/home1/datawork/jdelmott/data_jean/oyster.v9.fa,database=/home1/datawork/jdelmott/data_jean/viral.2.1.genomic.fna,GenomeOsHV1=/home1/datawork/jdelmott/data_jean/OsHV-1_strain_microVar_variant_A.fasta,mincontig=200,minlength=50,outdir=/home1/scratch/jdelmott/2020-03-20-Haplofit_metaviromic,insersize=${i}" OshV-1-molepidemio/src/03-metaviromics.pbs; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
 ```
+
+### 04) Creation of NR-genomes
+
+- In a first step, the sequences were analyzed on Ugene with a dotplot of the sequence against itself to identify the different structures of the genomes. Each repetition was manually annotated as follows: 1-Ul, 2-IRl, 3-X, 4-IRs, 5-Us. 
+
+- In a second step, the annotations were then saved in a csv and concatenate in csv format [NR_genomic_part_coordonate.csv](https://github.com/propan2one/OshV-1-molepidemio/blob/main/raw/a-OsHV-1-NCBI-genome/NR_genomic_part_coordonate.csv) to be cut out using the [seqkit](https://bioinf.shenwei.me/seqkit/) tool and the `seqkit subseq -r` option.
+
+- In a third step, the sequences will be concatenated to create the non-redundant genomes. See [04-NR_genome_genomes_construction.md](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/04-NR_genome_genomes_construction.md) for more details.
+
 
 ## Downstream analysis
 
