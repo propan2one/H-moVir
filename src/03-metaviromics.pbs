@@ -7,7 +7,7 @@
 # Metagenomics analysis targeted viral reads
 
 ## USAGE ##
-# qsub -v "id=Thau_2016_F15_filtration_ind1_PCR_metaviromic_Error_Corr,reads1=/home/datawork-hemovir/raw/illumina/NS.1258.003.IDT_i7_172---IDT_i5_172.Thau_2016_F15-ind1_R1.fastq.gz,reads2=/home/datawork-hemovir/raw/illumina/NS.1258.003.IDT_i7_172---IDT_i5_172.Thau_2016_F15-ind1_R2.fastq.gz,outdir=/home1/scratch/jdelmott/2020-02-26-Optimisation_assembly,genomefile=/home1/datawork/jdelmott/data_jean/oyster.v9.fa,database=/home1/datawork/jdelmott/data_jean/viral.2.1.genomic.fna,GenomeOsHV1=/home1/datawork/jdelmott/data_jean/OsHV-1_strain_microVar_variant_A.fasta,mincontig=200,minlength=50,insersize=397" /home1/datawork/jdelmott/Hemovir/src/metaviromics.pbs
+# qsub -v "id=Thau_2016_F15_filtration_ind1_PCR_metaviromic_Error_Corr,reads1=/home/datawork-hemovir/raw/illumina/NS.1258.003.IDT_i7_172---IDT_i5_172.Thau_2016_F15-ind1_R1.fastq.gz,reads2=/home/datawork-hemovir/raw/illumina/NS.1258.003.IDT_i7_172---IDT_i5_172.Thau_2016_F15-ind1_R2.fastq.gz,outdir=/home1/scratch/jdelmott/2020-02-26-Optimisation_assembly,genomefile=/home1/datawork/jdelmott/data_jean/oyster.v9.fa,database=/home1/datawork/jdelmott/data_jean/viral.2.1.genomic.fna,GenomeOsHV1=/home1/datawork/jdelmott/data_jean/OsHV-1_strain_microVar_variant_A.fasta,mincontig=200,minlength=50,insersize=397" OshV-1-molepidemio/src/03-metaviromics.pbs
 
 ## Upload datarmor ##
 # scp metaviromics.pbs jdelmott@datarmor:/home1/datahome/jdelmott
