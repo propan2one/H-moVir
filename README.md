@@ -75,8 +75,12 @@ while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2
 
 - In a second step, the annotations were then saved in a csv and concatenate in csv format [NR_genomic_part_coordonate.csv](https://github.com/propan2one/OshV-1-molepidemio/blob/main/raw/a-OsHV-1-NCBI-genome/NR_genomic_part_coordonate.csv) to be cut out using the [seqkit](https://bioinf.shenwei.me/seqkit/) tool and the `seqkit subseq -r` option.
 
-- In a third step, the sequences will be concatenated to create the non-redundant genomes. See [04-NR_genome_genomes_construction.md](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/04-NR_genome_genomes_construction.md) for more details.
+- In a third step, the sequences will be concatenated to create the non-redundant genomes. 
 
+See [04-NR_genome_genomes_construction.md](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/04-NR_genome_genomes_construction.md) for more details.
+
+
+Checks were performed using multiple alignment using [mafft](https://mafft.cbrc.jp/alignment/software/) en utilisant le script [mafft_MSA.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/mafft_MSA.pbs). Visualization of the alignment was done with [Aliview](https://github.com/AliView/AliView).
 
 ## Downstream analysis
 
