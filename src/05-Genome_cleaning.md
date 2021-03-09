@@ -4,16 +4,14 @@ During genome assembly, we encountered some poorly assembled regions due to the 
 
 ## Correction of sequences upstream (5') from UL
 
+There are 56 bp upstream corresponding to the extension of the read overlap with UL. These outgoing sequences correspond to the fact that the UL is surrounded by 2 sequences in reverse complement of each other. The assembler will thus extend these sequences during the compaction of the de burjin graph.
+
+![graphical_summary](https://github.com/propan2one/OshV-1-molepidemio/blob/main/image/05-Genome_cleaning-upstream_correction.png?raw=true)
+
+Once the UL contiguous orientation is correct the sequences have been corrected using the `sed` function as follows.
+
 ```bash
-#### En vrai on sait pas dans quelle sens est le Us... à ce niveau la donc j'ai lancer le pipeline sur tout pour les contigs
-ls */*/14*_NR_genome_contigs_raw.faa
-seqkit seq -r -p Us.fasta > rev_comp.fasta
-
-sed -i "s/CTGAGTATCAATTCGAAGTAATCTCCTATACCCAAATCATTACACATCTCGTGCA//" # enlevé ce qui dépace en 5'
-
-for folder in *_noPCR* ; do mkdir $folder/R01-${folder%_noPCR}_selected_contigs ; done
-#for folder in *_noPCR* ; do rm $folder/${folder%_noPCR} ; done
-for folder in *_noPCR* ; do cp $folder/output_fasta/* $folder/R01-${folder%_noPCR}_selected_contigs; done
+sed -i "s/CTGAGTATCAATTCGAAGTAATCTCCTATACCCAAATCATTACACATCTCGTGCA//" # removed what is out of place in 5'
 ```
 
 ## Verification of the assembly by aligning the reads on the de novo assembly genome
