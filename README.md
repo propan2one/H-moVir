@@ -67,7 +67,6 @@ while read h f; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`l
 
 ![NR_genomes.png](https://github.com/propan2one/OshV-1-molepidemio/blob/main/image/NR_genomes.png?raw=true)
 
-
 - In a first step, the sequences were analyzed on Ugene with a dotplot of the sequence against itself to identify the different structures of the genomes. Each repetition was manually annotated as follows: 1-Ul, 2-IRl, 3-X, 4-IRs, 5-Us. 
 
 - In a second step, the annotations were then saved in a csv and concatenate in csv format [NR_genomic_part_coordonate.csv](https://github.com/propan2one/OshV-1-molepidemio/blob/main/raw/a-OsHV-1-NCBI-genome/NR_genomic_part_coordonate.csv) to be cut out using the [seqkit](https://bioinf.shenwei.me/seqkit/) tool and the `seqkit subseq -r` option.
@@ -90,10 +89,6 @@ while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2
 
 **Note** that the multiple alignment used to check the sub-structure of the non-redundant genome is not provided in the command line parameters.
 
-## Downstream analysis
-
-fix: NR-genome construction on part 3 instead of part 4
-
 ### 05) Genome cleaning
 
 ### 06) Phylogenetic analysis
@@ -101,3 +96,5 @@ fix: NR-genome construction on part 3 instead of part 4
 ### 07) Non redundant consensus generation
 
 ### 08)
+
+## Downstream analysis
