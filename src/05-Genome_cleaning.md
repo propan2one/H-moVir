@@ -1,6 +1,6 @@
 # Genome cleaning
 
-During genome assembly, we encountered some poorly assembled regions due to the genomic structure (repeats) of the OsHV-1 virus. We observed sequences upstream (5') of UL. Parts of the genome showed N (named polyN). As well as the junction of UL (named polyC). To understand the origin of this scaffolding and to solve them we proceeded as follows.
+During genome assembly, we encountered some poorly assembled regions due to the genomic structure (repeats) of the OsHV-1 virus. We observed additional sequences upstream (5') of UL. Parts of the genome showed N (named polyN). As well as the junction of UL (named polyC). To understand the origin of this scaffolding and to solve them we proceeded as follows.
 
 ## Correction of sequences upstream (5') from UL
 
