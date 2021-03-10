@@ -87,7 +87,7 @@ Example of `Thau_2018_NSI_broyage_ind3_noPCR`
 
 ### For the individual 1 Thau 2018 the sequences that will be modified are
 
-#### Région PolyN
+#### Region PolyN
 
 >Thau_2018_NSI_broyage_ind1_quasi-assembly_pilon_pilon
 cggaaatgattgctgattggttga-------------------------------------------------------------------------------------------------------------------atgtgatatcatctacctccgcaat
@@ -175,7 +175,7 @@ sed -i 's/TGCTGATTGGTCTGTTATTATTAGACCATTACATTTATTCTAAAAATATAAACCAATGACTGTAGTCGGA
 
 ### For the individual 6 Thau 2018 the sequences that will be modified
 
-#### Région PolyN
+#### Region PolyN
 
 >NR-genome_Ostreid_herpesvirus_1_strain_microVar_variant_B
 gaaatgattgctgattggttgaatgtgatatcatctacctccgcaatgtgttgattgggttgttattattagaccattacttcactctaaaaatataaaccaatgactgtagtcggaaatgattgctgattggttgaatgtgatatcatctacctccgcaatgtgttgattgggttgttattattagaccattacttcactcta
