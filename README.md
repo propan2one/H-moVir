@@ -91,6 +91,8 @@ while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2
 
 ### 05) Genome cleaning
 
+When necessary, the genomes were cleaned manually. Up to three events were studied: an artifact of a 5' UL sequence, a few small tandem repeat sequences of about 160 bp (polyN) and a location containing a repeat of several Cytosine (polyC). All the analyses were performed by computer and the code can be found in [05-Genome_cleaning.md](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/05-Genome_cleaning.md) file.
+
 ### 06) Phylogenetic analysis
 
 ### 07) Non redundant consensus generation
