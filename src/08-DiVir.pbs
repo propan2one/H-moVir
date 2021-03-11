@@ -7,14 +7,7 @@
 # Metagenomics analysis targeted viral reads
 
 ## USAGE ##
-# qsub -v "name=Brest_2018_NSI_broyage_ind10_noPCR, outdir=/home1/scratch/jdelmott/2020-04-09-Construct_DiVir, reads1=/home/ref-bioinfo/ifremer/ihpe/hemovir-haplofit/data/dna-sequence-raw/illumina/2020-02-27-genomequebec_pool_ind/NS.1258.004.IDT_i7_101---IDT_i5_101.Brest_2018_2_R1.fastq.gz, reads2=/home/ref-bioinfo/ifremer/ihpe/hemovir-haplofit/data/dna-sequence-raw/illumina/2020-02-27-genomequebec_pool_ind/NS.1258.004.IDT_i7_101---IDT_i5_101.Brest_2018_2_R2.fastq.gz" /home1/datawork/jdelmott/Hemovir/src/DiVir.pbs
-# qsub -v "name=Brest_2018_NSI_broyage_ind10_noPCR" /home1/datawork/jdelmott/Hemovir/src/DiVir.pbs
-
-## Associated Project ##
-# DiVir & HemoVir, located in HemoVir/src
-
-## History ##
-# 2020-03-15 Creation du programme - derive metaviromic & variant-oshvRef & rarefaction
+# qsub -v "name=, outdir=, reads1=, reads2=" 08-DiVir.pbs
 
 ## Related program ##
 #print_comment.py (HemoVir)
@@ -370,8 +363,6 @@ fi
 #    echo "viral_genome defaut parameter assembly contigs"
 #    viral_genome="/home1/datawork/jdelmott/data_jean/Ostreid_herpesvirus.faa"
 #fi
-
-exit 0
 
 # Annotation of viral genome
 if [ ! -f "$viral_gff" ] ; then
