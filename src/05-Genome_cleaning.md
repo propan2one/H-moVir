@@ -46,6 +46,9 @@ samtools view -F 4 -@ $NCPUS -b > ${outputName}.bam \
 echo -e "Aligning $(basename $reads1) & $(basename $reads1) against $(basename $Genome)" >> $logfile
 samtools sort -T ${outputName}.bam -o ${outputName}_sort.bam ${outputName}.bam
 samtools flagstat ${outputName}_sort.bam >> ${logfile}
+
+# Visualization in local using ugene
+ugene -ui ${bamfile}_sort.bam
 ```
 
 We observed (see below) that there were no reads that could cross this ployN.

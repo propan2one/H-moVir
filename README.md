@@ -16,6 +16,17 @@ Login and passwords are missing in the code. The paths used in the code have als
 
 The virus genomes used in the study were downloaded directly from NCBI as follows:
 
+| Genome                                                                                                             |  Id accession |
+|--------------------------------------------------------------------------------------------------------------------|---------------|
+| [Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KY242785.1/) |    KY242785.1 |
+| [Ostreid_herpesvirus_1_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/AY509253.2/)                           |  AY509253.2   |
+| [Ostreid_herpesvirus_1_strain_microVar_variant_B_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KY271630.1/) |    KY271630.1 |
+| [Ostreid_herpesvirus_1_isolate_ZK0118_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/MF509813.1/)            |   MF509813.1  |
+| [Chlamys_acute_necrobiotic_virus_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/GQ153938.1/)                 |    GQ153938.1 |
+| [Abalone_herpesvirus_Taiwan_2005_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KU096999.1/)                 |    KU096999.1 |
+| [Ostreid_herpesvirus_1_strain_CDSB2012_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KP412538.1/)           |  KP412538.1   |
+| [Ostreid_herpesvirus_1_2016_PT_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/MG561751.2/)                   |  MG561751.2   |
+
 ```bash
 # Download fasta format
 #OsHV_genomes_folder=~/Documents/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome # exemple
@@ -63,7 +74,7 @@ The analysis of genetic diversity rarefaction was performed for all samples indi
 while read h f; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R2.fastq.gz`; qsub -v "rate=5000, id=${f}, reads1=${r1}, reads2=${r2}, outdir=/home1/scratch/jdelmott/2020-02-12-Rarefaction_Haplofit/, genomefile=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome/Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome_0.fa, gffFile=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome/Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome_0.gff" OshV-1-molepidemio/src/02-rarefaction_virus.pbs; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
 ```
 
-### 03) Creation of NR-genomes from NCBI
+### 03) Creation of Non Rredundant-genomes from NCBI
 
 ![NR_genomes.png](https://github.com/propan2one/OshV-1-molepidemio/blob/main/image/NR_genomes.png?raw=true)
 
@@ -71,12 +82,12 @@ while read h f; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`l
 
 - In a second step, the annotations were then saved in a csv and concatenate in csv format [NR_genomic_part_coordonate.csv](https://github.com/propan2one/OshV-1-molepidemio/blob/main/raw/a-OsHV-1-NCBI-genome/NR_genomic_part_coordonate.csv) to be cut out using the [seqkit](https://bioinf.shenwei.me/seqkit/) tool and the `seqkit subseq -r` option.
 
-- In a third step, the sequences will be concatenated to create the non-redundant genomes. 
+- In a third step, the sequences will be concatenated to create the non-redundant (NR) genomes. 
 
 See [03-NR_genome_genomes_construction.md](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/03-NR_genome_genomes_construction.md) for more details.
 
 
-Checks were performed using multiple alignment using [mafft](https://mafft.cbrc.jp/alignment/software/) en utilisant le script [mafft_MSA.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/mafft_MSA.pbs). Visualization of the alignment was done with [Aliview](https://github.com/AliView/AliView).
+Checks were performed using multiple alignment using [mafft](https://mafft.cbrc.jp/alignment/software/) using the script [mafft_MSA.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/mafft_MSA.pbs). Visualization of the alignment was done with [Aliview](https://github.com/AliView/AliView).
 
 
 ### 04) Assembly of the genome of the virus of interest
@@ -95,8 +106,77 @@ When necessary, the genomes were cleaned manually. Up to three events were studi
 
 ### 06) Phylogenetic analysis
 
-### 07) Non redundant consensus generation
+Once all the NR genomes were assembled and corrected, an alignment using the NR versions of the redundant genomes was performed. To do this, the genomes were aligned with each other using the [mafft_MSA.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/mafft_MSA.pbs) script and then the tree construction was performed using the [06-inference_iqtree.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/06-inference_iqtree.pbs) script (1000 bootstrap). The outgroup has been designated as `NR-genome_Abalone_herpesvirus_Taiwan_2005.fasta`.
 
-### 08)
+```bash
+# global
+qsub -v "outdir=,MSA=Fig2A_global_phylogeny.msa,outgroup=NR-genome_Abalone_herpesvirus_Taiwan_2005.fasta" 06-inference_iqtree.pbs
+```
+
+A few minor modifications were made later as described below:
+
+```python
+# changing format
+from Bio import AlignIO
+AlignIO.convert("NR_genome_corrected.maf", "fasta", "NR_genome_corrected.phy", "phylip-relaxed")
+```
+
+```bash
+#The best-scoring maximum-likelihood tree
+~/Software/iqtree-1.6.7-Linux/bin/iqtree -s NR_genome_corrected.phy -m MFP
+
+#### Reading and visualizing tree files
+java -jar ~/Software/FigTree\ v1.4.4/lib/figtree.jar
+```
+
+Subsequently the creation and data analysis of the figure was done under R in the [INCOMPLET](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/.Rmd) file.
+
+### 07) Non redundant consensus generation and alignment
+
+To make genome-wide comparisons, we compared all of these genomes individually to the consensus genome of these genomes. To do this we first generated a consensus sequence using the EMBOSS suite with `-plurality 0.2` as follow:
+
+```bash
+# Generation of consenus between the 21 NR genomes
+
+# Generation of consenus between the 21 NR genomes
+cat PATH/OshV-1-molepidemio/results/NR-Asm-genome/*.fasta >> PATH/OshV-1-molepidemio/results/NR-Asm-genome/NR_genomes_seq.fasta
+cons -sequence PATH/OshV-1-molepidemio/results/NR-Asm-genome/NR_genomes_seq.fasta \
+    -outseq PATH/OshV-1-molepidemio/results/NR-Asm_consensus/C-NR-genome.fasta \
+    -plurality 0.2 -name C-NR-genome.fasta
+```
+
+Then the genome-wide comparison is carried out against the consensus genome as described below.
+
+```bash
+#conda create -y -n mummer4
+source activate mummer4
+#conda install -c bioconda mummer4
+ln -s PATH/OshV-1-molepidemio/results/NR-Asm_consensus/C-NR-genome.fasta .
+cat PATH/OshV-1-molepidemio/results/NR-Asm-genome/*.fasta >> PATH/OshV-1-molepidemio/results/NR-Asm-genome/NR_genomes_seq.fasta # creattion du multifasta de tout les génomes
+NR_genomes_seq=PATH/OshV-1-molepidemio/results/NR-Asm-genome/NR_genomes_seq.fasta
+Consensus_global=PATH/OshV-1-molepidemio/results/NR-Asm_consensus/C-NR-genome.fasta
+
+# mumref
+nucmer -c 100 -l 15 -f -p nucmer_numref $Consensus_global $NR_genomes_seq
+show-coords -r -c -l nucmer_numref.delta > nucmer_numref.coords 
+show-snps -T nucmer_numref.delta > nucmer_numref.snps
+```
+
+Thereafter the analysis is done under R in the [INCOMPLET](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/.Rmd) file.
+
+### 08) Variant calling analysis
+
+The variant calling analysis was made against the C-NR-genome (step 07 above) to synchronize the positions with genomic comparison. The script to use is [08-DiVir.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/08-DiVir.pbs).
+
+```bash
+while read h f i ; do r1=`ls /home/ref-bioinfo/ifremer/ihpe/hemovir-haplofit/data/dna-sequence-raw/illumina/2020-02-27-genomequebec_pool_ind/${h}*_R1.fastq.gz`; r2=`ls /home/ref-bioinfo/ifremer/ihpe/hemovir-haplofit/data/dna-sequence-raw/illumina/2020-02-27-genomequebec_pool_ind/${h}*_R2.fastq.gz`; qsub -v "name=${f}, reads1=${r1},reads2=${r2},outdir=,viral_genome=OshV-1-molepidemio/results/NR-Asm_consensus/C-NR-genome.fasta" OshV-1-molepidemio/src/08-DiVir.pbs ; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
+```
+
+Subsequently and to save time the VCF files were transformed into an array using [VCFminer](https://github.com/Steven-N-Hart/vcf-miner) to be analyzed using R in the downstream analysis .
+
+```bash
+docker run -d -p 8888:8080 stevenhart/vcf-miner
+firefox http://`hostname -I | awk '{print $1}'`:8888/vcf-miner/
+```
 
 ## Downstream analysis
