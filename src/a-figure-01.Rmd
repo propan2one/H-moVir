@@ -1,0 +1,518 @@
+---
+title: "Panels of Figure 1 overview"
+author: "Delmotte jean"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: TRUE
+    code_folding: "hide"
+    theme: united
+    highlight: tango
+    number_sections: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Fonction to install / load package if it's not here
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+ipak(unique(
+  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly", 
+    "hrbrthemes", "viridis", "ggsci", # palette
+    "cowplot", "scales", "maptools", "gggenes") # plot
+  ) )
+```
+
+
+```{r Base_Path}
+base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
+```
+
+# Metadata
+
+## Overview
+
+NOTE: During the development phase, the location of "Marennes-Oléron" (MO) was entitled "La Tremblade" (LT). To better correspond to the literature, the term MO has been chosen. Thus in the code the two acronyms are interchangeable.
+
+```{r WGS_metadatas_raw}
+substrRight <- function(x, n){ # Extracts the character in the other direction
+  substr(x, nchar(x)-n+1, nchar(x))
+}
+
+metadata <- dplyr::full_join(data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/HaploFit_samples_2020-02-06.csv"), header = TRUE),
+                             data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/HaploFit_NovaSeqReadSet_2020-02-07.csv"), header = TRUE) ) %>% 
+  dplyr::distinct() %>%
+  dplyr::select(Nom,
+                `Type de séquençage`,
+                `Type de la librairie `, # il y a un espace dans le nom...
+                `Volume (ul)`,
+                `Concentration à la réception (ng/ul)`,
+                `Concentration mesurée (ng/ul)`,
+                `Quantité (ng)`,
+                `Nombre de bases`,
+                `Nombre de lectures NovaSeq`,
+                `Nombre de lectures`,
+                `Qualité moyenne`,
+                `% Duplicata`,
+                `Préfixe du fichier`) %>%
+  left_join(.,
+          data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/correspondence_name-ID.csv"), header = TRUE) %>%
+            as_tibble() ) %>%
+  dplyr::distinct() %>%
+  dplyr::select(Nom, ID_EXPERIMENT, dplyr::everything())
+```
+
+```{r Table01_metadata}
+Table01 <- metadata %>%
+  dplyr::filter(!is.na(ID_EXPERIMENT),
+                str_detect(ID_EXPERIMENT,"2018"),
+                str_detect(ID_EXPERIMENT,"ind")) 
+Table01 %>%
+  kable() %>%
+  kable_styling(fixed_thead = T, bootstrap_options = "condensed")
+
+# Table01 %>%
+#   data.table::fwrite(glue::glue("{base_path}/results/Tables/Table_01_metadata.csv"),
+#          sep = ",",
+#          quote=FALSE,
+#          row.names = FALSE)
+```
+
+**Description of the dataset**
+a dataset of 30 WGS have been obtained from 3 differentes French location : **Brest** (Coordinates: 48.3904° N, 4.4861° W), **Marennes-Oléron** (Coordinates: 45.7705° N, 1.1403° W), **Étang de Thau** (Coordinates: 43.3980° N, 3.6116° E) with respectively (N=6, 9, 15) when pacific oyster mortality syndrome (POMS) occurs *in natura* 2016 (N=5, only Étang de Thau) and 2018 (N=25, all location).
+In 2016 only samples with **F15 oyster family** have been place in Étang de Thau (N=5), in 2018 it's **NSI oyster families** which have been place th 3 differentes area (N=25). Moreover, all extraction form oyster have been perform with **grinding** of oyster (aka broyage), but for 5 F15/2016 samples there are **filtrations** steps. Which implies that *years*, *type* and *oyster families* correspond to the same variable. For the rest of the analysis, we will refer to **F15-2016** dataset (only in Étang de Thau) and **NSI-2018** dataset (type conditions are not gonna be indicated). There are also, 2 conditions: **individual sequencing** or **pool sequencing** ; 3 individual sequencing and 2 pool sequencing for F15-2016, whereras 5,7,9 indvidual sequencing and 1,2,1 pool sequencing for respectively Brest, Marennes-Oléron and Étang de Thau in NSI-2018 dataset. Finally when the shotgun sequencing was perform, its was with PCR (**PCR**) or without PCR (**noPCR**). For F15-2016 dataset only 1 samples have is PCR Free (pool sample). For NSI-2018, 5 over 6 sequencing from Brest location are PCR Free, and the only one with PCR is the pull sequencing ; in Marennes-Oléron's samples 8 over 9 sequencing are PCR Free, and the one with OCR is a pool ; in Étang de Thau 9 over 10 are PCR Free, the only one with PCR is the pull sequencing.
+
+```{r overview_metadata}
+metadata %>%
+      dplyr::filter(!is.na(ID_EXPERIMENT),
+                str_detect(ID_EXPERIMENT,"2018"),
+                str_detect(ID_EXPERIMENT,"ind")) %>%
+  dplyr::select(Nom, ID_EXPERIMENT) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR")) %>%
+  dplyr::mutate(CONDITION = stringr::str_replace_all(CONDITION, "[0-9]","")) %>%
+  dplyr::group_by(LOCATION, YEARS, FAM, CONDITION, WGS_PCR) %>%
+  dplyr::summarise(COUNT=n()) %>%
+  dplyr::arrange(FAM) %>%
+  kable() %>%
+  kable_styling(fixed_thead = T, bootstrap_options = "condensed")
+```
+
+## Color convention
+
+```{r Color_analysis, echo=FALSE, warning = FALSE, message = FALSE}
+## Convention
+# Color Brest:blue | LT:Red | Thau:Green
+# show_col(pal_aaas("default")(10))
+Brest_color = pal_aaas("default")(10)[1]
+LT_color = pal_aaas("default")(10)[2]
+Thau_color = pal_aaas("default")(10)[3]
+# Order
+
+plot_order_samples <- tibble(ID_EXPERIMENT = c("Brest_2018_NSI_broyage_ind10_noPCR", "Brest_2018_NSI_broyage_ind2_noPCR", "Brest_2018_NSI_broyage_ind4_noPCR", "Brest_2018_NSI_broyage_ind6_noPCR", "Brest_2018_NSI_broyage_ind9_noPCR", "LT_2018_NSI_broyage_ind10_noPCR", "LT_2018_NSI_broyage_ind1_noPCR", "LT_2018_NSI_broyage_ind3_noPCR", "LT_2018_NSI_broyage_ind4_noPCR", "LT_2018_NSI_broyage_ind7_noPCR", "LT_2018_NSI_broyage_ind8_noPCR", "LT_2018_NSI_broyage_ind9_noPCR", "Thau_2018_NSI_broyage_ind10_noPCR", "Thau_2018_NSI_broyage_ind1_noPCR", "Thau_2018_NSI_broyage_ind3_noPCR", "Thau_2018_NSI_broyage_ind4_noPCR", "Thau_2018_NSI_broyage_ind5_noPCR", "Thau_2018_NSI_broyage_ind6_noPCR", "Thau_2018_NSI_broyage_ind7_noPCR", "Thau_2018_NSI_broyage_ind8_noPCR", "Thau_2018_NSI_broyage_ind9_noPCR") ) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR")) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::left_join(., tibble(LOCATION = c("Brest","LT","Thau"),
+       ORDER= c(1,2,3))) %>%
+  dplyr::mutate(ORDER_samples = stringr::str_replace_all(CONDITION,"ind",""),
+                ORDER_samples = as.numeric(ORDER_samples)) %>%
+  arrange(ORDER, ORDER_samples)
+```
+
+# Analysis
+
+## Figure 1 A Geo-localisation of Datas
+
+```{r Figure_01_A_map}
+map <- map_data("world", region = "France")
+Table00 <- metadata %>%
+        dplyr::filter(!is.na(ID_EXPERIMENT),
+                str_detect(ID_EXPERIMENT,"2018"),
+                str_detect(ID_EXPERIMENT,"ind")) %>%
+  dplyr::select(Nom, ID_EXPERIMENT) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR")) %>%
+  dplyr::mutate(CONDITION = stringr::str_replace_all(CONDITION, "[0-9]","")) %>%
+  dplyr::group_by(LOCATION, YEARS, FAM, CONDITION, WGS_PCR) %>%
+  dplyr::summarise(COUNT=n()) %>%
+  dplyr::arrange(FAM) %>%
+  dplyr::ungroup(LOCATION) %>%
+  dplyr::mutate(long = dplyr::case_when(LOCATION == "Thau" ~ 3.6116494,
+                                        LOCATION == "Brest" ~ -4.4833300,
+                                        LOCATION == "LT" ~ -1.13333),
+                lat = dplyr::case_when(LOCATION == "Thau" ~ 43.3979814,
+                                        LOCATION == "Brest" ~ 48.4000000,
+                                        LOCATION == "LT" ~ 45.76667),
+                LOCATION = as.factor(LOCATION))
+# choix color background : http://sape.inf.usi.ch/quick-reference/ggplot2/colour
+Fig01A_map_export <- map %>%
+  ggplot() + 
+  geom_polygon(data=map, aes(x=long, y=lat, group=group),
+                color="black", fill="white" ) +
+  geom_point(data = Table00, aes(x = long, y = lat, color = LOCATION, size = 5 )) +
+  scale_colour_manual(values = c(Brest_color,LT_color,Thau_color)) +
+  theme_void()
+Fig01A_map_export
+rm(Table00,map)
+```
+
+```{r Fig01A_map_export, message=FALSE}
+ggsave("Fig01A_map_export.jpeg",
+       plot = Fig01A_map_export,
+       device = "jpeg",
+       path = glue::glue("{base_path}/results/Figures/jpeg/Figure_1"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Fig01A_map_export.tiff",
+       plot = Fig01A_map_export,
+       device = "tiff",
+       path = glue::glue("{base_path}/results/Figures/tiff/Figure_1"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Fig01A_map_export.eps",
+       plot = Fig01A_map_export,
+       device = "eps",
+       path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_1"),
+       width = 180, units = "mm", dpi = 300)
+rm(Fig01A_map_export)
+```
+
+## Figure 1 B Overview of sequencing Depth
+
+```{r Table02_Raw_reads}
+# Table S1
+raw_count_virus <-data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/OsHV_uVarA_readsCount.txt") ) %>%
+  dplyr::rename(ID_EXPERIMENT = V1,
+                READS_LIBRARY = V2,
+                READS_NON_ALIGN_VIRUS = V3,
+                READS_ALIGN_VIRUS = V4,
+                READS_QUALITY_ALIGN_VIRUS = V5) %>%
+          dplyr::filter(str_detect(ID_EXPERIMENT,"2018"),
+                        str_detect(ID_EXPERIMENT,"ind"))
+
+raw_count_oyster <- data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/Host_oyster.v9_readsCount.txt") ) %>%
+  dplyr::rename(ID_EXPERIMENT = V1,
+                READS_LIBRARY = V2,
+                READS_NON_ALIGN_HOST = V3,
+                READS_ALIGN_HOST = V4) %>%
+          dplyr::filter(!is.na(ID_EXPERIMENT),
+                str_detect(ID_EXPERIMENT,"2018"),
+                str_detect(ID_EXPERIMENT,"ind"))
+
+Table_02 <- dplyr::full_join(raw_count_oyster, raw_count_virus) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  dplyr::mutate(READS_OTHERS = READS_LIBRARY - READS_ALIGN_HOST - READS_ALIGN_VIRUS,
+                READS_bad_quality_virus = READS_ALIGN_VIRUS - READS_QUALITY_ALIGN_VIRUS) %>%
+  dplyr::as_tibble()
+
+# Table_02 %>%
+#   dplyr::select(-LOCATION,-YEARS,-FAM,-TYPE,-CONDITION,-WGS_PCR) %>%
+#   dplyr::select(ID_EXPERIMENT, READS_LIBRARY,READS_ALIGN_HOST,READS_ALIGN_VIRUS,READS_bad_quality_virus) %>%
+#   data.table::fwrite(glue::glue("{base_path}/results/Tables/Table_02_raw_count.csv"),
+#          sep = "\t",
+#          quote=FALSE,
+#          row.names = FALSE,
+#          col.names = TRUE)
+```
+
+```{r Results_comment_Fig01B}
+# DNA concentration of samples
+Table01 %>%
+   dplyr::filter(!is.na(ID_EXPERIMENT),
+                str_detect(ID_EXPERIMENT,"2018"),
+                str_detect(ID_EXPERIMENT,"ind")) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR")) %>%
+  dplyr::mutate(CONDITION = stringr::str_replace_all(CONDITION, "[0-9]",""),
+                `Concentration mesurée (ng/ul)` = stringr::str_replace_all(`Concentration mesurée (ng/ul)`, ",","."),
+                `Concentration mesurée (ng/ul)`= as.numeric(`Concentration mesurée (ng/ul)`)) %>%
+  arrange(desc(`Concentration mesurée (ng/ul)`)) %>%
+  dplyr::group_by(LOCATION) %>%
+  dplyr::summarise(SUM= sum(`Concentration mesurée (ng/ul)`),
+                   MAX= max(`Concentration mesurée (ng/ul)`),
+                   MEDIAN = median(`Concentration mesurée (ng/ul)`),
+                   MEAN = mean(`Concentration mesurée (ng/ul)`),
+                   MIN = min(`Concentration mesurée (ng/ul)`),
+                   IQR = IQR(`Concentration mesurée (ng/ul)`),
+                   SD = sd(`Concentration mesurée (ng/ul)`))
+
+Table_02 %>%
+  dplyr::group_by(LOCATION) %>%
+  dplyr::summarise(SUM_all_READS = sum(READS_LIBRARY),
+                   MEDIAN_all_READS = median(READS_LIBRARY),
+                   MEAN_all_READS = mean(READS_LIBRARY),
+                   MAX_all_READS= max(READS_LIBRARY),
+                   MIN_all_READS= min(READS_LIBRARY),
+                   SUM_all_QUALITY_OsHV = sum(READS_ALIGN_VIRUS),
+                   SUM_all_QUALITY_Oysters = sum(READS_ALIGN_HOST)) %>%
+  mutate(percent_total_sum_lib = 100* SUM_all_READS / 2303619456)
+
+Table_02 %>%
+  dplyr::group_by(LOCATION) %>%
+  dplyr::summarise(N= n(),
+                   SUM_all_READS = sum(READS_LIBRARY),
+                   MAX_all_READS= max(READS_LIBRARY),
+                   MEDIAN_all_READS = median(READS_LIBRARY),
+                   MEAN_all_READS = mean(READS_LIBRARY),
+                   MIN_all_READS= min(READS_LIBRARY),
+                   IQR = IQR(READS_LIBRARY),
+                   SD = sd(READS_LIBRARY))
+```
+
+
+```{r Figure_01_B_overview_sequencing}
+# Fig1B: Quantification of the number of reads mapping OsHV-1 µVar A.
+Fig01B_overview_sequencing_p2 <- Table_02 %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE)  %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR),
+                      names_to = "READS_TYPE",
+                      values_to = "COUNT") %>%
+  dplyr::filter(READS_TYPE == "READS_QUALITY_ALIGN_VIRUS") %>%
+  dplyr::left_join(.,plot_order_samples) %>%
+  dplyr::mutate(Samples = stringr::str_replace_all(Samples,"_"," "),
+                Samples = stringr::str_replace_all(Samples,"Brest","Br"),
+                Samples = stringr::str_replace_all(Samples,"LT","Lt"),
+                Samples = stringr::str_replace_all(Samples,"Thau","Th")) %>%
+  ggplot(aes(x=forcats::fct_reorder2(Samples, ORDER_samples, ORDER), y=(COUNT/1000000), fill=LOCATION)) +
+    geom_bar(stat = "identity") +
+    labs(x = "",
+         y = "Number of reads on OsHV-1 µVar A (million)")+
+    coord_flip()+ 
+    theme_minimal()+
+  scale_fill_manual(values = c(Brest_color,LT_color,Thau_color))
+
+# Fig1B: Quantification of the number of reads in the library
+Fig01B_overview_sequencing_p1 <-Table_02 %>%
+  dplyr::mutate(READS_percentage = (READS_QUALITY_ALIGN_VIRUS / READS_LIBRARY )*100) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE)  %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR),
+                      names_to = "READS_TYPE",
+                      values_to = "COUNT") %>%
+  dplyr::filter(READS_TYPE == "READS_LIBRARY") %>%
+  dplyr::left_join(.,plot_order_samples) %>%
+  dplyr::mutate(Samples = stringr::str_replace_all(Samples,"_"," "),
+                Samples = stringr::str_replace_all(Samples,"Brest","Br"),
+                Samples = stringr::str_replace_all(Samples,"LT","Lt"),
+                Samples = stringr::str_replace_all(Samples,"Thau","Th")) %>%
+  ggplot(aes(x=forcats::fct_reorder2(Samples, ORDER_samples, ORDER), y=(COUNT/1000000), fill=LOCATION)) +
+    geom_bar(stat = "identity") +
+    coord_flip()+ 
+    theme_minimal()+
+      labs(x = "",
+             y = "Number of reads per library (million)")+
+  scale_fill_manual(values = c(Brest_color,LT_color,Thau_color))
+
+# Coverage
+genome_size = 204886
+Fig01B_overview_sequencing_p3 <-Table_02 %>%
+  dplyr::mutate(READS_coverage = (READS_QUALITY_ALIGN_VIRUS / genome_size )*150) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE)  %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR),
+                      names_to = "READS_TYPE",
+                      values_to = "COUNT") %>%
+  dplyr::filter(READS_TYPE == "READS_coverage") %>%
+  dplyr::left_join(.,plot_order_samples) %>%
+  dplyr::mutate(Samples = stringr::str_replace_all(Samples,"_"," "),
+                Samples = stringr::str_replace_all(Samples,"Brest","Br"),
+                Samples = stringr::str_replace_all(Samples,"LT","Lt"),
+                Samples = stringr::str_replace_all(Samples,"Thau","Th")) %>%
+  ggplot(aes(x=forcats::fct_reorder2(Samples, ORDER_samples, ORDER), y=COUNT, fill=LOCATION)) +
+    geom_bar(stat = "identity") +
+    # scale_y_log10() +
+    # geom_text(aes(label=COUNT), vjust=) +
+    # geom_label(aes(label=COUNT)) +
+    coord_flip()+ 
+    theme_minimal()+
+      labs(x = "",
+             y = "Coverage ")+
+  scale_fill_manual(values = c(Brest_color,LT_color,Thau_color))
+
+Fig01B_overview_sequencing <- plot_grid(Fig01B_overview_sequencing_p1, 
+                                        Fig01B_overview_sequencing_p2,
+                                        # Fig01B_overview_sequencing_p3,
+          labels = "auto",
+          align = "v", axis = 'l',
+          nrow = 1)
+Fig01B_overview_sequencing
+```
+
+```{r Figure_01_B_overview_sequencing_export, message=FALSE}
+ggsave("Fig01B_overview_sequencing.jpeg",
+       plot = Fig01B_overview_sequencing,
+       device = "jpeg",
+       path = glue::glue("{base_path}/results/Figures/jpeg/Figure_1"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Fig01B_overview_sequencing.tiff",
+       plot = Fig01B_overview_sequencing,
+       device = "tiff",
+       path = glue::glue("{base_path}/results/Figures/tiff/Figure_1"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Fig01B_overview_sequencing.eps",
+       plot = Fig01B_overview_sequencing,
+       device = "eps",
+       path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_1"),
+       width = 180, units = "mm", dpi = 300)
+rm(Fig01B_overview_sequencing)
+```
+
+## Figure 1 C Rarefaction analysis
+
+```{r Figure_01_C_rarefaction, message=FALSE}
+rarefaction <- data.table::fread(glue::glue("{base_path}/results/Tables/rarefaction_analysis.csv") ) %>%
+  dplyr::rename(READS = V1,
+                FRAC = V2,
+                ID_EXPERIMENT = V3,
+                SNP = V4,
+                REF = V5,
+                INDEL = V6) %>%
+  dplyr::filter(!is.na(ID_EXPERIMENT),
+                str_detect(ID_EXPERIMENT,"2018"),
+                str_detect(ID_EXPERIMENT,"ind")) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE)  %>%
+  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+  dplyr::mutate(POLY = SNP + REF +INDEL) # Changé pour mettre others et pas REF (note le 2020-05-19)
+
+plot_order_polymorphismes <- tibble::tibble(POLYMORPHISME_TYPE = c("SNP","INDEL","REF"),
+               ORDER_poly = c(1,2,3))
+# Fig1C: Rarefaction curves using OsHV-1 µVar A genome
+Fig01_C_rarefaction <- rarefaction %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR, -VAR, -FRAC,-READS),
+                      names_to = "POLYMORPHISME_TYPE",
+                      values_to = "COUNT") %>%
+  filter(POLYMORPHISME_TYPE != "POLY",
+         POLYMORPHISME_TYPE != "REF") %>% # Suppression to keep only INDEL and SNPs
+  left_join(.,plot_order_polymorphismes) %>%
+  tidyr::unite(ORDER_poly,POLYMORPHISME_TYPE, col = POLYMORPHISME_TYPE, sep = " ") %>% # Quick and dirty reorder
+  ggplot(aes(x=READS,y=COUNT, color=VAR, alpha = 0.1)) +
+  geom_point(size=0.8) +
+  theme_minimal() +
+  labs(x = "Number of reads",
+       y = "Number of polymorphismes") +
+  facet_grid(POLYMORPHISME_TYPE ~., scales = "free") +
+  scale_color_manual(values = c(Brest_color,LT_color,Thau_color)) +
+  geom_vline(xintercept = 200000, linetype = "dotdash", size = 0.5, color = "#5C5C5C")
+Fig01_C_rarefaction
+```
+
+```{r Figure_01_C_rarefaction_analysis}
+# This part allowed me to choose which part of the curve is stable to determine a threshold.
+rarefaction %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR, -VAR, -FRAC,-READS),
+                      names_to = "POLYMORPHISME_TYPE",
+                      values_to = "INDEL_300000") %>%
+  dplyr::filter(POLYMORPHISME_TYPE != "POLY",
+         POLYMORPHISME_TYPE != "REF") %>% # Suppression to keep only INDEL and SNPs
+  left_join(.,plot_order_polymorphismes) %>%
+  tidyr::unite(ORDER_poly,POLYMORPHISME_TYPE, col = POLYMORPHISME_TYPE, sep = " ") %>%
+  dplyr::select(-VAR,-Samples,-LOCATION,-YEARS,-FAM,-TYPE,-CONDITION,-WGS_PCR) %>%
+  dplyr::filter(POLYMORPHISME_TYPE == "2 INDEL",
+                READS > 295000 & READS < 304000)
+
+## SNP
+# 300000
+SNP_300000 <-rarefaction %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR, -VAR, -FRAC,-READS),
+                      names_to = "POLYMORPHISME_TYPE",
+                      values_to = "SNP_300000") %>%
+  dplyr::filter(POLYMORPHISME_TYPE != "POLY",
+         POLYMORPHISME_TYPE != "REF") %>% # Suppression to keep only INDEL and SNPs
+  left_join(.,plot_order_polymorphismes) %>%
+  tidyr::unite(ORDER_poly,POLYMORPHISME_TYPE, col = POLYMORPHISME_TYPE, sep = " ") %>%
+  dplyr::select(-VAR,-Samples,-LOCATION,-YEARS,-FAM,-TYPE,-CONDITION,-WGS_PCR) %>%
+  dplyr::filter(POLYMORPHISME_TYPE == "1 SNP",
+                READS > 295000 & READS < 304000) %>%
+  arrange(desc(READS)) %>%
+  select(ID_EXPERIMENT, SNP_300000)
+
+# max
+SNP_max <-rarefaction %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR, -VAR, -FRAC,-READS),
+                      names_to = "POLYMORPHISME_TYPE",
+                      values_to = "COUNT") %>%
+  dplyr::filter(POLYMORPHISME_TYPE != "POLY",
+         POLYMORPHISME_TYPE != "REF") %>% # Suppression to keep only INDEL and SNPs
+  left_join(.,plot_order_polymorphismes) %>%
+  tidyr::unite(ORDER_poly,POLYMORPHISME_TYPE, col = POLYMORPHISME_TYPE, sep = " ") %>%
+  dplyr::select(-VAR,-Samples,-LOCATION,-YEARS,-FAM,-TYPE,-CONDITION,-WGS_PCR) %>%
+  dplyr::filter(POLYMORPHISME_TYPE == "1 SNP") %>%
+  arrange(desc(READS)) %>%
+  group_by(ID_EXPERIMENT) %>%
+  summarise(max_SNP = max(COUNT))
+
+SNP <- left_join(SNP_300000, SNP_max)
+
+## INDEL
+# 300000
+INDEL_300000 <-rarefaction %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR, -VAR, -FRAC,-READS),
+                      names_to = "POLYMORPHISME_TYPE",
+                      values_to = "INDEL_300000") %>%
+  dplyr::filter(POLYMORPHISME_TYPE != "POLY",
+         POLYMORPHISME_TYPE != "REF") %>% # Suppression to keep only INDEL and SNPs
+  left_join(.,plot_order_polymorphismes) %>%
+  tidyr::unite(ORDER_poly,POLYMORPHISME_TYPE, col = POLYMORPHISME_TYPE, sep = " ") %>%
+  dplyr::select(-VAR,-Samples,-LOCATION,-YEARS,-FAM,-TYPE,-CONDITION,-WGS_PCR) %>%
+  dplyr::filter(POLYMORPHISME_TYPE == "2 INDEL",
+                READS > 295000 & READS < 304000) %>%
+  arrange(desc(READS)) %>%
+  select(ID_EXPERIMENT, INDEL_300000)
+# max
+INDEL_max <-rarefaction %>%
+  tidyr::pivot_longer(c(-Samples, -ID_EXPERIMENT, -LOCATION, -YEARS, -FAM, -TYPE, -CONDITION, -WGS_PCR, -VAR, -FRAC,-READS),
+                      names_to = "POLYMORPHISME_TYPE",
+                      values_to = "COUNT") %>%
+  dplyr::filter(POLYMORPHISME_TYPE != "POLY",
+         POLYMORPHISME_TYPE != "REF") %>% # Suppression to keep only INDEL and SNPs
+  left_join(.,plot_order_polymorphismes) %>%
+  tidyr::unite(ORDER_poly,POLYMORPHISME_TYPE, col = POLYMORPHISME_TYPE, sep = " ") %>%
+  dplyr::select(-VAR,-Samples,-LOCATION,-YEARS,-FAM,-TYPE,-CONDITION,-WGS_PCR) %>%
+  dplyr::filter(POLYMORPHISME_TYPE == "2 INDEL") %>%
+  arrange(desc(READS)) %>%
+  group_by(ID_EXPERIMENT) %>%
+  summarise(max_INDEL = max(COUNT))
+
+INDEL <- left_join(INDEL_300000, INDEL_max)
+
+# Tables
+left_join(SNP, INDEL) %>% view()
+
+left_join(SNP, INDEL) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR")) %>%
+  group_by(LOCATION) %>%
+  summarise(mean_SNP_300000 = mean(SNP_300000),
+            mean_max_SNP = mean(max_SNP),
+            mean_INDEL_300000 = mean(INDEL_300000),
+            mean_max_INDEL = mean(max_INDEL))
+```
+
+
+```{r Figure_01_C_rarefaction_export, message=FALSE}
+ggsave("Fig01_C_rarefaction.jpeg",
+       plot = Fig01_C_rarefaction,
+       device = "jpeg",
+       path = glue::glue("{base_path}/results/Figures/jpeg/Figure_1"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Fig01_C_rarefaction.tiff",
+       plot = Fig01_C_rarefaction,
+       device = "tiff",
+       path = glue::glue("{base_path}/results/Figures/tiff/Figure_1"),
+       width = 180, units = "mm", dpi = 300)
+# Classical export fail on EPS format, switch to PDF
+# Fig01_C_rarefaction
+dev.copy2pdf(file=glue::glue("{base_path}/results/Figures/eps_svg/Figure_1/Fig01_C_rarefaction_alpha.pdf"),out.type="cairo", width=18)
+writeLines(glue::glue("pdftops -eps  {base_path}/results/Figures/eps_svg/Figure_1/Fig01_C_rarefaction_alpha.pdf"))
+rm(Fig01_C_rarefaction)
+```
+
+```{r}
+sessionInfo()
+```
