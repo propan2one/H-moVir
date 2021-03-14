@@ -25,15 +25,34 @@ ipak <- function(pkg){
 }
 
 ipak(unique(
-  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly", 
+  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly", "ape", "tidytree",
     "hrbrthemes", "viridis", "ggsci", # palette
-    "cowplot", "scales", "maptools", "gggenes") # plot
+    "cowplot", "scales", "maptools", "gggenes", "ggtree") # plot
   ) )
 ```
 
 
 ```{r Base_Path}
 base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
+```
+
+```{r Color_analysis, echo=FALSE, warning = FALSE, message = FALSE}
+## Convention
+# Color Brest:blue | LT:Red | Thau:Green
+# show_col(pal_aaas("default")(10))
+Brest_color = pal_aaas("default")(10)[1]
+LT_color = pal_aaas("default")(10)[2]
+Thau_color = pal_aaas("default")(10)[3]
+# Order
+
+plot_order_samples <- tibble(ID_EXPERIMENT = c("Brest_2018_NSI_broyage_ind10_noPCR", "Brest_2018_NSI_broyage_ind2_noPCR", "Brest_2018_NSI_broyage_ind4_noPCR", "Brest_2018_NSI_broyage_ind6_noPCR", "Brest_2018_NSI_broyage_ind9_noPCR", "LT_2018_NSI_broyage_ind10_noPCR", "LT_2018_NSI_broyage_ind1_noPCR", "LT_2018_NSI_broyage_ind3_noPCR", "LT_2018_NSI_broyage_ind4_noPCR", "LT_2018_NSI_broyage_ind7_noPCR", "LT_2018_NSI_broyage_ind8_noPCR", "LT_2018_NSI_broyage_ind9_noPCR", "Thau_2018_NSI_broyage_ind10_noPCR", "Thau_2018_NSI_broyage_ind1_noPCR", "Thau_2018_NSI_broyage_ind3_noPCR", "Thau_2018_NSI_broyage_ind4_noPCR", "Thau_2018_NSI_broyage_ind5_noPCR", "Thau_2018_NSI_broyage_ind6_noPCR", "Thau_2018_NSI_broyage_ind7_noPCR", "Thau_2018_NSI_broyage_ind8_noPCR", "Thau_2018_NSI_broyage_ind9_noPCR") ) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR")) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::left_join(., tibble(LOCATION = c("Brest","LT","Thau"),
+       ORDER= c(1,2,3))) %>%
+  dplyr::mutate(ORDER_samples = stringr::str_replace_all(CONDITION,"ind",""),
+                ORDER_samples = as.numeric(ORDER_samples)) %>%
+  arrange(ORDER, ORDER_samples)
 ```
 
 ## Figure 2 A Genome Drawing
@@ -119,4 +138,99 @@ ggsave("Figure_02_A_genome_drawing.eps",
        path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_2"),
        width = 180, units = "mm", dpi = 300)
 rm(Figure_02_A_genome_drawing)
+```
+
+## Figure 2 B Phylogenetique comparaison between all NR-genomes
+
+The phylogenetic tree was obtained as described in the [README.md](https://github.com/propan2one/OshV-1-molepidemio#06-phylogenetic-analysis).
+
+```{r Figure_02_A_phylogenetic_analysis}
+iqtree <- treeio::read.newick(glue::glue("{base_path}/results/Phylogenetics_analysis/Fig2A_global_phylogeny.msa.treefile"))
+# is.rooted(iqtree)
+iqtree <- root(iqtree, "NR-genome_Abalone_herpesvirus_Taiwan_2005.fasta", resolve.root=TRUE)
+
+iqtree$tip.label <- stringr::str_replace_all(iqtree$tip.label,"NR_genome_","")
+iqtree$tip.label <- stringr::str_replace_all(iqtree$tip.label,"NR-genome_","")
+iqtree$tip.label <- stringr::str_replace_all(iqtree$tip.label,"_2018_NSI_broyage_"," ")
+iqtree$tip.label <- stringr::str_replace_all(iqtree$tip.label,"_noPCR","")
+iqtree$tip.label <- stringr::str_replace_all(iqtree$tip.label,"Brest","Br")
+iqtree$tip.label <- stringr::str_replace_all(iqtree$tip.label,"Thau","Th")
+iqtree$tip.label <- stringr::str_replace_all(iqtree$tip.label,"LT","Lt")
+iqtree$tip.label <- stringr::str_replace_all(iqtree$tip.label,"Ostreid_herpesvirus_1_strain_microVar_variant_A","OsHV-1 µVar A (KY242785.1)")
+iqtree$tip.label <- stringr::str_replace(iqtree$tip.label,"Ostreid_herpesvirus_1_strain_microVar_variant_B","OsHV-1 µVar B (KY271630.1)")
+iqtree$tip.label <- stringr::str_replace(iqtree$tip.label,'Ostreid_herpesvirus_1_isolate_ZK0118',"OsHV-1 ZK0118 (MF509813.1)")
+iqtree$tip.label <- stringr::str_replace(iqtree$tip.label,"Chlamys_acute_necrobiotic_virus","AVNV (GQ153938.1)")
+iqtree$tip.label <- stringr::str_replace(iqtree$tip.label,"Abalone_herpesvirus_Taiwan_2005\\.fasta","Abalone herpesvirus (KU096999.1)")
+iqtree$tip.label <- stringr::str_replace(iqtree$tip.label,"Ostreid_herpesvirus_1_strain_CDSB2012\\.fasta","OsHV-1-SB (KP412538.1)")
+iqtree$tip.label <- stringr::str_replace(iqtree$tip.label,"Ostreid_herpesvirus_1_2016_PT","OsHV-1 PT (MG561751.2)")
+iqtree$tip.label <- stringr::str_replace(iqtree$tip.label,"Ostreid_herpesvirus_1","OsHV-1 (AY509253.2)")
+PatristicDistMatrix<-cophenetic(iqtree)
+
+# annotation to display color
+annotation <- tibble(label = iqtree$tip.label) %>%
+  separate(label, 
+           into = c("location", "individual"),
+           sep = " ",
+           remove = FALSE) %>%
+  dplyr::select(-individual) %>%
+  dplyr::mutate(location = str_replace(location, "-SB",""),
+         location = recode(location,
+                            `OsHV-1` = "published",
+                            `Abalone` = "published",
+                            `Ostreid_herpesvirus_1` = "published"))
+tree <- full_join(as_tibble(iqtree), annotation, by = 'label') %>%
+  as.treedata()
+
+# solution from https://yulab-smu.github.io/treedata-book/faq.html part Bootstrap values from newick format
+arbre_vide <- ggtree(iqtree)
+data_arbre_vide <- arbre_vide$data
+data_arbre_vide <- data_arbre_vide[!data_arbre_vide$isTip,]
+data_arbre_vide$label <- as.numeric(data_arbre_vide$label)
+data_arbre_vide <- data_arbre_vide[data_arbre_vide$label >= 70,]
+
+# Change branch length of outgroup
+as_tibble(iqtree) %>%
+  filter(str_detect(label, "KU096999\\.1"))
+
+m <- MRCA(iqtree, 27,28)
+iqtree_group_for_outgroup <- groupClade(iqtree, m)
+
+y <- full_join(as_tibble(iqtree_group_for_outgroup), annotation, by = 'label') %>%
+  as.treedata()
+
+p <- ggtree(y) + 
+  theme(legend.position = 'none')
+outgroup_info <- glue::glue("Transformation de la distance de l'outgroup de {median(p$data$x)} en prenant la median au lieu de {p$data[p$data$node %in% 27, 'x']} pour aider à la visualisation" )
+writeLines(outgroup_info)
+p$data[p$data$node %in% 27, "x"] <- median(p$data$x)
+
+Figure_02_A_phylogenetic_analysis <- p + geom_treescale(x=0, y=10, color='black') +
+  geom_text(data=data_arbre_vide, aes(label=label), size = 4, vjust = -0.8, hjust=+1) +
+  geom_tiplab(size=3, aes(color=location)) +
+  scale_colour_manual(values=c(Brest_color, LT_color, "black", Thau_color))
+Figure_02_A_phylogenetic_analysis
+```
+
+Note: As it was not possible to get the eps file directly, I had to create a PDF which I transformed into eps locally with the command `pdftops -eps Figure_02_A_phylogenetic_analysis.pdf` as observed `l230`.
+
+```{r Figure_02_A_phylogenetic_analysis_export, message=FALSE}
+ggsave("Figure_02_A_phylogenetic_analysis.jpeg",
+       plot = Figure_02_A_phylogenetic_analysis,
+       device = "jpeg",
+       path = glue::glue("{base_path}/results/Figures/jpeg/Figure_3"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Figure_02_A_phylogenetic_analysis.tiff",
+       plot = Figure_02_A_phylogenetic_analysis,
+       device = "tiff",
+       path = glue::glue("{base_path}/results/Figures/tiff/Figure_3"),
+       width = 180, units = "mm", dpi = 300)
+
+dev.copy2pdf(file=glue::glue("{base_path}/results/Figures/eps_svg/Figure_3/Figure_02_A_phylogenetic_analysis.pdf"),out.type="cairo", width=18)
+writeLines(glue::glue("pdftops -eps  {base_path}/results/Figures/eps_svg/Figure_3/Figure_02_A_phylogenetic_analysis.pdf"))
+rm(Figure_02_A_phylogenetic_analysis)
+```
+
+```{r}
+sessionInfo()
 ```
