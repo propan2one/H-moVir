@@ -8,9 +8,13 @@ The genetic diversity of viral populations has become a major issue in the under
 
 ![graphical_summary](https://github.com/propan2one/OshV-1-molepidemio/blob/main/image/graphical_summary.png?raw=true)
 
-## Ressources
+## Computational platform
 
-Login and passwords are missing in the code. The paths used in the code have also been replaced for security reasons. They can be found as follows where the variabe `PATH` corresponds to the location where the repository was cloned:
+- The upstream data treatments were carried out under job scheduler for high-performance computing (PBSpro).
+
+- The downstream data treatments were carried out locally on a Dell computer with 62,8 Go RAM, intel® Core™ i7-7700 CPU @ 3.60GHz × 8 wiith Ubuntu OS 16.04 LTS.
+
+## Retrieval of sequences from databases
 
 ### Previously published OsHV genome
 
@@ -61,6 +65,8 @@ ncbi-acc-download -F fasta ${id} -p ${name}
 ### 00) Metadata analysis
 
 The metadata provided by the sequencing platform was cleaned up using an [00-preliminary_data.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/00-preliminary_data.Rmd). This made the file `ID_experiment.csv` synchronizing the filenames and identifiers readable. Subsequently, the file to use can be found in `OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv` and the insertion size has been added by hand with the help of `libreoffice --calc`.
+
+Note: Login and passwords are missing in the code. The paths used in the code have also been replaced for security reasons.
 
 ### 01) Data transfer
 
@@ -181,6 +187,6 @@ firefox http://`hostname -I | awk '{print $1}'`:8888/vcf-miner/
 
 ## Downstream analysis
 
-Data analysis have been 
+All the cleaning and analysis of the data was done directly on R, or on Graphpadprism. Once the visualizations were done, they were exported in "eps" format and then reworked on Adobe Illustrator to improve the graphic quality of each panel.
 
 - a-figure-01.Rmd
