@@ -68,9 +68,13 @@ The metadata provided by the sequencing platform was cleaned up using an [00-pre
 
 Note: Login and passwords are missing in the code. The paths used in the code have also been replaced for security reasons.
 
+___
+
 ### 01) Data transfer
 
 All data has been transferred and MD5 have been check from the servers of the transfer platform to the datarmor calculation server with : [01-data_transfer.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/01-data_transfer.pbs)
+
+___
 
 ### 02) Genetic diversity rarefaction analysis
 
@@ -79,6 +83,8 @@ The analysis of genetic diversity rarefaction was performed for all samples indi
 ```bash
 while read h f; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R2.fastq.gz`; qsub -v "rate=5000, id=${f}, reads1=${r1}, reads2=${r2}, outdir=/home1/scratch/jdelmott/2020-02-12-Rarefaction_Haplofit/, genomefile=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome/Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome_0.fa, gffFile=/PATH/OshV-1-molepidemio/raw/a-OsHV-1-NCBI-genome/Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome_0.gff" OshV-1-molepidemio/src/02-rarefaction_virus.pbs; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
 ```
+
+___
 
 ### 03) Creation of Non Rredundant-genomes from NCBI
 
@@ -95,6 +101,7 @@ See [03-NR_genome_genomes_construction.md](https://github.com/propan2one/OshV-1-
 
 Checks were performed using multiple alignment using [mafft](https://mafft.cbrc.jp/alignment/software/) using the script [mafft_MSA.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/mafft_MSA.pbs). Visualization of the alignment was done with [Aliview](https://github.com/AliView/AliView).
 
+___
 
 ### 04) Assembly of the genome of the virus of interest
 
@@ -106,11 +113,15 @@ while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2
 
 **Note** that the multiple alignment used to check the sub-structure of the non-redundant genome is not provided in the command line parameters.
 
+___
+
 ### 05) Genome cleaning
 
 When necessary, the genomes were cleaned manually. Up to three events were studied: an artifact of a 5' UL sequence, a few small tandem repeat sequences of about 160 bp (polyN) and a location containing a repeat of several Cytosine (polyC). All the analyses were performed by computer and the code can be found in [05-Genome_cleaning.md](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/05-Genome_cleaning.md) file.
 
 The set of assembled non-redundant genomes can be found at this location: [NR-Asm-genome](https://github.com/propan2one/OshV-1-molepidemio/tree/main/results/NR-Asm-genome)
+
+___
 
 ### 06) Phylogenetic analysis
 
@@ -138,6 +149,8 @@ java -jar ~/Software/FigTree\ v1.4.4/lib/figtree.jar
 ```
 
 Subsequently the creation and data analysis of the figure was done under R in the [b-figure-02.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/b-figure-02.Rmd) file. The `TREEFILE` can be found here: [TreeFile](https://github.com/propan2one/OshV-1-molepidemio/blob/main/results/Phylogenetics_analysis/Fig2A_global_phylogeny.msa.treefile).
+
+___
 
 ### 07) Non redundant consensus generation and alignment
 
@@ -172,6 +185,8 @@ show-snps -T nucmer_numref.delta > nucmer_numref.snps
 
 Thereafter the analysis is done under R in the [INCOMPLET](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/.Rmd) file.
 
+___
+
 ### 08) Variant calling analysis
 
 The variant calling analysis was made against the C-NR-genome (step 07 above) to synchronize the positions with genomic comparison. The script to use is [08-DiVir.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/08-DiVir.pbs).
@@ -186,6 +201,7 @@ Subsequently and to save time the VCF files were transformed into an array using
 docker run -d -p 8888:8080 stevenhart/vcf-miner
 firefox http://`hostname -I | awk '{print $1}'`:8888/vcf-miner/
 ```
+___
 
 ## Downstream analysis
 
