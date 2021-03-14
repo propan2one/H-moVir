@@ -1,0 +1,122 @@
+---
+title: "Panels of Figure 2: Phylogenetic relationship between the 21 de novo assembled non-redundant genomes and other Malacoherpesviridae"
+author: "Delmotte jean"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: TRUE
+    code_folding: "hide"
+    theme: united
+    highlight: tango
+    number_sections: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Fonction to install / load package if it's not here
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+ipak(unique(
+  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly", 
+    "hrbrthemes", "viridis", "ggsci", # palette
+    "cowplot", "scales", "maptools", "gggenes") # plot
+  ) )
+```
+
+
+```{r Base_Path}
+base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
+```
+
+## Figure 2 A Genome Drawing
+
+The genome structure of OsHV-1 µVar A virus was represented based on the analyses of [Burioli et al., 2017](https://doi.org/10.1016/j.virol.2017.06.027) and confirmed on Ugene 1.30.0 [Okonechnikov et al., 2012](https://doi.org/10.1093/bioinformatics/bts091).
+
+```{r Figure_02_A_genome_drawing, message=FALSE}
+Unique_long=164268
+Repeat_long=7338
+X_region=1510
+Repeat_short=9777
+X_region=1510
+Unique_short=3370
+genome_size = 204886
+nr_genoe_size = Unique_long+Repeat_long+X_region+Repeat_short+Unique_short
+nr_genoe_size / genome_size
+
+writeLines(glue::glue("Approximately {round((1-(nr_genoe_size)/genome_size)*100)}% of OsHV-1 genome consists of a set of repeats elements with 2 long repeat ({Repeat_long} nt), 2 short repeat ({Repeat_short} nt) and a X region ({X_region} nt)"))
+# Genome drawing
+OsHV_uVarA_scheme <- data.table::fread(glue::glue("{base_path}/raw/b-raw_metadatas/OsHV_uVarA_annotations.csv") ) %>%
+  dplyr::mutate(direction = if_else(strand == "forward",1,-1 ))
+Figure_02_A_genome_drawing_p1 <- OsHV_uVarA_scheme %>%
+  ggplot(aes(xmin = start, xmax = end, y = direction, fill = `region :`, forward = direction, label = name)) +
+  facet_wrap(~ molecule, ncol = 1) +
+    geom_gene_label(align = "left") +
+    geom_gene_arrow(arrowhead_height = unit(16, "mm"),
+                    arrowhead_width = unit(3, "mm"),
+                    arrow_body_height= unit(16, "mm")) +
+    scale_fill_brewer(palette = "Set3") +
+      labs(x = "",
+         y = "") +
+    theme_classic()+
+    xlim(0, 204886) +
+    theme(axis.text.x = element_text(face="bold", size=14),
+          legend.position = "none") +
+    theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+# Non redondant
+Figure_02_A_genome_drawing_p2 <- OsHV_uVarA_scheme %>%
+  dplyr::mutate(direction = if_else(strand == "forward",1,-1 )) %>%
+  filter(start >= 7339 & end < 193601) %>%
+  ggplot(aes(xmin = start, xmax = end, y = direction, fill = `region :`, forward = direction, label = name)) +
+  facet_wrap(~ molecule, ncol = 1) +
+    geom_gene_label(align = "left") +
+    geom_gene_arrow(arrowhead_height = unit(16, "mm"),
+                    arrowhead_width = unit(3, "mm"),
+                    arrow_body_height= unit(16, "mm")) +
+    scale_fill_brewer(palette = "Set3") +
+    theme_classic()+
+    labs(x = "",
+         y = "")+
+    xlim(0, 204886) +
+    theme(axis.text.x = element_text(face="bold", size=14),
+          legend.position = "bottom") +
+    theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+Figure_02_A_genome_drawing <- plot_grid(Figure_02_A_genome_drawing_p1, Figure_02_A_genome_drawing_p2,
+          labels = c('', ''),
+          ncol = 1)
+Figure_02_A_genome_drawing
+```
+
+```{r Figure_02_A_genome_drawing_export, message=FALSE}
+ggsave("Figure_02_A_genome_drawing.jpeg",
+       plot = Figure_02_A_genome_drawing,
+       device = "jpeg",
+       path = glue::glue("{base_path}/results/Figures/jpeg/Figure_2"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Figure_02_A_genome_drawing.tiff",
+       plot = Figure_02_A_genome_drawing,
+       device = "tiff",
+       path = glue::glue("{base_path}/results/Figures/tiff/Figure_2"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Figure_02_A_genome_drawing.eps",
+       plot = Figure_02_A_genome_drawing,
+       device = "eps",
+       path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_2"),
+       width = 180, units = "mm", dpi = 300)
+rm(Figure_02_A_genome_drawing)
+```
