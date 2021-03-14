@@ -110,6 +110,8 @@ while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2
 
 When necessary, the genomes were cleaned manually. Up to three events were studied: an artifact of a 5' UL sequence, a few small tandem repeat sequences of about 160 bp (polyN) and a location containing a repeat of several Cytosine (polyC). All the analyses were performed by computer and the code can be found in [05-Genome_cleaning.md](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/05-Genome_cleaning.md) file.
 
+The set of assembled non-redundant genomes can be found at this location: [NR-Asm-genome](https://github.com/propan2one/OshV-1-molepidemio/tree/main/results/NR-Asm-genome)
+
 ### 06) Phylogenetic analysis
 
 Once all the NR genomes were assembled and corrected, an alignment using the NR versions of the redundant genomes was performed. To do this, the genomes were aligned with each other using the [mafft_MSA.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/mafft_MSA.pbs) script and then the tree construction was performed using the [06-inference_iqtree.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/06-inference_iqtree.pbs) script (1000 bootstrap). The outgroup has been designated as `NR-genome_Abalone_herpesvirus_Taiwan_2005.fasta`.
@@ -135,7 +137,7 @@ AlignIO.convert("NR_genome_corrected.maf", "fasta", "NR_genome_corrected.phy", "
 java -jar ~/Software/FigTree\ v1.4.4/lib/figtree.jar
 ```
 
-Subsequently the creation and data analysis of the figure was done under R in the [INCOMPLET](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/.Rmd) file.
+Subsequently the creation and data analysis of the figure was done under R in the [b-figure-02.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/b-figure-02.Rmd) file. The `TREEFILE` can be found here: [TreeFile](https://github.com/propan2one/OshV-1-molepidemio/blob/main/results/Phylogenetics_analysis/Fig2A_global_phylogeny.msa.treefile).
 
 ### 07) Non redundant consensus generation and alignment
 
@@ -189,4 +191,6 @@ firefox http://`hostname -I | awk '{print $1}'`:8888/vcf-miner/
 
 All the cleaning and analysis of the data was done directly on R, or on Graphpadprism. Once the visualizations were done, they were exported in "eps" format and then reworked on Adobe Illustrator to improve the graphic quality of each panel.
 
-- a-figure-01.Rmd
+- [a-figure-01.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/a-figure-01.Rmd) shows that the variability in sequencing depth does not affect the analysis of OsHV-1 diversity. 
+- [b-figure-02.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/b-figure-02.Rmd) shows that phylogenetic analysis of OsHV-1 non-redundant genomes reveals that the three OsHV-1 populations belong to the µVar genotype.
+- 
