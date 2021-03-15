@@ -60,6 +60,9 @@ name=oyster.v9
 ncbi-acc-download -F fasta ${id} -p ${name}
 ```
 
+___
+___
+
 ## Upstream analysis
 
 ### 00) Metadata analysis
@@ -202,6 +205,11 @@ Subsequently and to save time the VCF files were transformed into an array using
 docker run -d -p 8888:8080 stevenhart/vcf-miner
 firefox http://`hostname -I | awk '{print $1}'`:8888/vcf-miner/
 ```
+___
+
+### 09) Reconstruction of genomes in full version
+
+___
 ___
 
 ## Downstream analysis
