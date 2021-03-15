@@ -192,7 +192,8 @@ ___
 The variant calling analysis was made against the C-NR-genome (step 07 above) to synchronize the positions with genomic comparison. The script to use is [08-DiVir.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/08-DiVir.pbs).
 
 ```bash
-while read h f i ; do r1=`ls /home/ref-bioinfo/ifremer/ihpe/hemovir-haplofit/data/dna-sequence-raw/illumina/2020-02-27-genomequebec_pool_ind/${h}*_R1.fastq.gz`; r2=`ls /home/ref-bioinfo/ifremer/ihpe/hemovir-haplofit/data/dna-sequence-raw/illumina/2020-02-27-genomequebec_pool_ind/${h}*_R2.fastq.gz`; qsub -v "name=${f}, reads1=${r1},reads2=${r2},outdir=,viral_genome=OshV-1-molepidemio/results/NR-Asm_consensus/C-NR-genome.fasta" OshV-1-molepidemio/src/08-DiVir.pbs ; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
+
+while read h f i ; do r1=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R1.fastq.gz`; r2=`ls /PATH/OshV-1-molepidemio/raw/${h}*_R2.fastq.gz`; qsub -v "name=${f}, reads1=${r1},reads2=${r2},outdir=,viral_genome=OshV-1-molepidemio/results/NR-Asm_consensus/C-NR-genome.fasta" OshV-1-molepidemio/src/08-DiVir.pbs ; done < OshV-1-molepidemio/raw/b-raw_metadatas/ID_experiment.csv
 ```
 
 Subsequently and to save time the VCF files were transformed into an array using [VCFminer](https://github.com/Steven-N-Hart/vcf-miner) to be analyzed using R in the downstream analysis .
