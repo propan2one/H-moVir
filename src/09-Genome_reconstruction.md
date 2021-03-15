@@ -191,20 +191,12 @@ blastn \
     -outfmt "6 sseqid qseqid length pident qstart qend evalue qlen" \
     -evalue 0.0001 \
     -out $(basename ${genome%.fasta}).blastout
-
-# sseqid qseqid                                          length  pident sstart   send    qstart  qend    evalue qlen
-# Ul      NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     164284  99.920  1       164266  0.0     186279
-# IRl     NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     7349    99.673  164279  171623  0.0     186279
-# X       NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     1508    99.801  171628  173135  0.0     186279
-# IRs     NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     9779    99.826  173136  182908  0.0     186279
-# Us      NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     3371    99.852  182909  186279  0.0     186279
-# GCTGTTATATGAATTGAGTAAAGGTAAGAAAATTGCCCTCGCCGTGCCAA
 ```
 
-### NR genome Brest 2018 ind6
+### NR genome Marenne Oleron 2018 ind1
 
 - `GAAAACGACATA` 12bp between Ul and IRl have been add to UL du to size
-- In the OsHV-1 uVar A genome, the separation between IRl and X is `GGGGTGTT` whereas here it is `GGGGGATGTT` with the start of X 5' at `GATGTT`.
+- `TGGGGAGGTGGGGGGGGG`more G than in OsHV-1 µVar A genome `AGGTGGGGGG` in 3' of IRl.
 
 ```bash
 mkdir blast ; cd $WD/blast
@@ -213,7 +205,53 @@ ln -s $WD/structure_oshv_uVar.fna .
 makeblastdb -in structure_oshv_uVar.fna -parse_seqids -dbtype nucl
 
 db=$WD/blast/structure_oshv_uVar.fna
-genome=~/Project/OshV-1-molepidemio/results/NR-Asm-genome/NR_genome_Brest_2018_NSI_broyage_ind6_noPCR.fasta
+genome=~/Project/OshV-1-molepidemio/results/NR-Asm-genome/NR_genome_LT_2018_NSI_broyage_ind1_noPCR.fasta
+blastn \
+    -query $genome \
+    -db $db \
+    -word_size 450 \
+    -num_threads 4 \
+    -outfmt "6 sseqid qseqid length pident qstart qend evalue qlen" \
+    -evalue 0.0001 \
+    -out $(basename ${genome%.fasta}).blastout
+```
+
+### NR genome Marenne Oleron 2018 ind3
+
+- `GAAAACGACATA` 12bp between Ul and IRl have been add to UL du to size
+- `AGGTGGGGGGGGG`more G than in OsHV-1 µVar A genome `AGGTGGGGGG` in 3' of IRl.
+
+```bash
+mkdir blast ; cd $WD/blast
+ln -s $WD/structure_oshv_uVar.fna .
+# mkdb of structures
+makeblastdb -in structure_oshv_uVar.fna -parse_seqids -dbtype nucl
+
+db=$WD/blast/structure_oshv_uVar.fna
+genome=~/Project/OshV-1-molepidemio/results/NR-Asm-genome/NR_genome_LT_2018_NSI_broyage_ind3_noPCR.fasta
+blastn \
+    -query $genome \
+    -db $db \
+    -word_size 450 \
+    -num_threads 4 \
+    -outfmt "6 sseqid qseqid length pident qstart qend evalue qlen" \
+    -evalue 0.0001 \
+    -out $(basename ${genome%.fasta}).blastout
+```
+
+### NR genome Marenne Oleron 2018 ind4
+
+- `GAAAACGACATA` 12bp between Ul and IRl have been add to UL du to size
+- In the OsHV-1 uVar A genome, the separation between IRl and X is `GGGGTGTT` whereas here it is `GGGGGATGTT` with the start of X 5' at `GATGTT`. (like Brest)
+
+```bash
+mkdir blast ; cd $WD/blast
+ln -s $WD/structure_oshv_uVar.fna .
+# mkdb of structures
+makeblastdb -in structure_oshv_uVar.fna -parse_seqids -dbtype nucl
+
+db=$WD/blast/structure_oshv_uVar.fna
+genome=~/Project/OshV-1-molepidemio/results/NR-Asm-genome/NR_genome_LT_2018_NSI_broyage_ind4_noPCR.fasta
 blastn \
     -query $genome \
     -db $db \
@@ -223,23 +261,99 @@ blastn \
     -evalue 0.0001 \
     -out $(basename ${genome%.fasta}).blastout
 
-# sseqid qseqid                                          length  pident sstart   send    qstart  qend    evalue qlen
-# Ul      NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     164284  99.920  1       164266  0.0     186279
-# IRl     NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     7349    99.673  164279  171623  0.0     186279
-# X       NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     1508    99.801  171628  173135  0.0     186279
-# IRs     NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     9779    99.826  173136  182908  0.0     186279
-# Us      NR_genome_Brest_2018_NSI_broyage_ind6_noPCR     3371    99.852  182909  186279  0.0     186279
-# GCTGTTATATGAATTGAGTAAAGGTAAGAAAATTGCCCTCGCCGTGCCAA
 ```
 
+### NR genome Marenne Oleron 2018 ind7
 
-NR_genome_LT_2018_NSI_broyage_ind10_noPCR.fasta
-NR_genome_LT_2018_NSI_broyage_ind1_noPCR.fasta
-NR_genome_LT_2018_NSI_broyage_ind3_noPCR.fasta
-NR_genome_LT_2018_NSI_broyage_ind7_noPCR.fasta
-NR_genome_LT_2018_NSI_broyage_ind4_noPCR.fasta
-NR_genome_LT_2018_NSI_broyage_ind9_noPCR.fasta
-NR_genome_LT_2018_NSI_broyage_ind8_noPCR.fasta
+- `GAAAACGACATA` 12bp between Ul and IRl have been add to UL du to size
+- `AGGTGGGGGGGGG`more G than in OsHV-1 µVar A genome `AGGTGGGGGG` in 3' of IRl.
+
+```bash
+mkdir blast ; cd $WD/blast
+ln -s $WD/structure_oshv_uVar.fna .
+# mkdb of structures
+makeblastdb -in structure_oshv_uVar.fna -parse_seqids -dbtype nucl
+
+db=$WD/blast/structure_oshv_uVar.fna
+genome=~/Project/OshV-1-molepidemio/results/NR-Asm-genome/NR_genome_LT_2018_NSI_broyage_ind7_noPCR.fasta
+blastn \
+    -query $genome \
+    -db $db \
+    -word_size 450 \
+    -num_threads 4 \
+    -outfmt "6 sseqid qseqid length pident qstart qend evalue qlen" \
+    -evalue 0.0001 \
+    -out $(basename ${genome%.fasta}).blastout
+```
+### NR genome Marenne Oleron 2018 ind8
+
+- `GAAAACGACATA` 12bp between Ul and IRl have been add to UL du to size
+- `AGGTGGGGGGGGG`more G than in OsHV-1 µVar A genome `AGGTGGGGGG` in 3' of IRl.
+
+```bash
+mkdir blast ; cd $WD/blast
+ln -s $WD/structure_oshv_uVar.fna .
+# mkdb of structures
+makeblastdb -in structure_oshv_uVar.fna -parse_seqids -dbtype nucl
+
+db=$WD/blast/structure_oshv_uVar.fna
+genome=~/Project/OshV-1-molepidemio/results/NR-Asm-genome/NR_genome_LT_2018_NSI_broyage_ind8_noPCR.fasta
+blastn \
+    -query $genome \
+    -db $db \
+    -word_size 450 \
+    -num_threads 4 \
+    -outfmt "6 sseqid qseqid length pident qstart qend evalue qlen" \
+    -evalue 0.0001 \
+    -out $(basename ${genome%.fasta}).blastout
+```
+
+### NR genome Marenne Oleron 2018 ind9
+
+- `GAAAACGACATA` 12bp between Ul and IRl have been add to UL du to size
+- `AGGTGGGGGGGGG`more G than in OsHV-1 µVar A genome `AGGTGGGGGG` in 3' of IRl.
+
+```bash
+mkdir blast ; cd $WD/blast
+ln -s $WD/structure_oshv_uVar.fna .
+# mkdb of structures
+makeblastdb -in structure_oshv_uVar.fna -parse_seqids -dbtype nucl
+
+db=$WD/blast/structure_oshv_uVar.fna
+genome=~/Project/OshV-1-molepidemio/results/NR-Asm-genome/NR_genome_LT_2018_NSI_broyage_ind9_noPCR.fasta
+blastn \
+    -query $genome \
+    -db $db \
+    -word_size 450 \
+    -num_threads 4 \
+    -outfmt "6 sseqid qseqid length pident qstart qend evalue qlen" \
+    -evalue 0.0001 \
+    -out $(basename ${genome%.fasta}).blastout
+```
+
+### NR genome Marenne Oleron 2018 ind10
+
+- `GAAAACGACATA` 12bp between Ul and IRl have been add to UL du to size
+- `AGGTGGGGGGGGG`more G than in OsHV-1 µVar A genome `AGGTGGGGGG` in 3' of IRl.
+
+```bash
+mkdir blast ; cd $WD/blast
+ln -s $WD/structure_oshv_uVar.fna .
+# mkdb of structures
+makeblastdb -in structure_oshv_uVar.fna -parse_seqids -dbtype nucl
+
+db=$WD/blast/structure_oshv_uVar.fna
+genome=~/Project/OshV-1-molepidemio/results/NR-Asm-genome/NR_genome_LT_2018_NSI_broyage_ind10_noPCR.fasta
+blastn \
+    -query $genome \
+    -db $db \
+    -word_size 450 \
+    -num_threads 4 \
+    -outfmt "6 sseqid qseqid length pident qstart qend evalue qlen" \
+    -evalue 0.0001 \
+    -out $(basename ${genome%.fasta}).blastout
+```
+
 NR_genome_Thau_2018_NSI_broyage_ind10_noPCR.fasta
 NR_genome_Thau_2018_NSI_broyage_ind4_noPCR.fasta
 NR_genome_Thau_2018_NSI_broyage_ind3_noPCR.fasta
