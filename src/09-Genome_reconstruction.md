@@ -14,7 +14,7 @@ https://github.com/propan2one/OshV-1-molepidemio#03-creation-of-non-rredundant-g
 
 ```bash
 # Working directory
-WD=~/Project/OshV-1-molepidemio/results/Genomes_asm_dir_test
+WD=~/Project/OshV-1-molepidemio/results/Genomes_re-asm
 cd $WD
 # Download fasta format (exactly like #3)
 id=KY242785.1
@@ -443,5 +443,56 @@ blastn \
     -out $(basename ${genome%.fasta}).blastout
 ```
 
-Work with
-/home/propan2one/Project/OshV-1-molepidemio/results/Genomes_re-asm/structure_Asm_NR-genome.csv
+## Exctraction of each sequences structure
+
+Thanks to the table containing the manually verified positions, it is possible to modify the non-redundant genome into a complete genome by taking into account the inverted repeats. Thus the table XXX has been manually annotated to contain the additional information of TRl, TRs and X2 (the second fragment X in 3').
+
+```bash
+# Working directory
+WD=~/Project/OshV-1-molepidemio/results/Genomes_re-asm
+cd $WD
+mkdir /home/propan2one/Project/OshV-1-molepidemio/results/Genomes_re-asm/structure_asm_genome
+cd /home/propan2one/Project/OshV-1-molepidemio/results/Genomes_re-asm/structure_asm_genome
+#for file in ~/Project/OshV-1-molepidemio/results/NR-Asm-genome/*.fasta ; do ln -s $file $(basename ${file%.fasta}) ; done
+for file in ~/Project/OshV-1-molepidemio/results/NR-Asm-genome/*.fasta ; do ln -s $file . ; done
+
+cat NR_genome_Brest_2018_NSI_broyage_ind2_noPCR.fasta | seqkit subseq -r 164280:171632 | seqkit seq --seq -rp -t DNA | tr [:lower:] [:upper:] | sed ':a;N;$!ba;s/\n//g' 
+>> $O/${N}_$O.fasta
+
+# Extract genomic fragments
+while read F N S E L C G ; do
+    echo -e "Part $N in $G"
+    if [ $C == "no" ]; then
+        if [ ! -d $G ]; then mkdir $G ; fi
+        echo -e ">${N}_$G" > $G/${N}_$G.fasta
+        cat ${G}.fasta | seqkit subseq -r $S:$E | seqkit seq --seq | tr [:lower:] [:upper:] | sed ':a;N;$!ba;s/\n//g' >> $G/${N}_$G.fasta
+    else
+        if [ ! -d $G ]; then mkdir $G ; fi
+            echo -e ">${N}_$G" > $G/${N}_$G.fasta
+            cat ${G}.fasta | seqkit subseq -r $S:$E | seqkit seq --seq -rp | tr [:lower:] [:upper:] | sed ':a;N;$!ba;s/\n//g' >> $G/${N}_$G.fasta
+    fi
+done < Structure_Asm_relative_reconstruction.csv
+```
+
+The order of the TRl-UL-IRl-X-IRs-Us-TRs-X2 sequences was saved in order to be able to create the genome file in one shot.
+
+```bash
+
+# Creat full length genome
+while read F N S E L C G ; do
+    echo -e "Part $N in $G"
+    if [ $C == "no" ]; then
+        if [ ! -d ${G#NR_genome_} ]; then mkdir ${G#NR_genome_} ; fi
+        cat ${G}.fasta | seqkit subseq -r $S:$E | seqkit seq --seq | tr [:lower:] [:upper:] | sed ':a;N;$!ba;s/\n//g' >> ${G#NR_genome_}/${G#NR_genome_}_transi.fasta
+    else
+        if [ ! -d ${G#NR_genome_} ]; then mkdir ${G#NR_genome_} ; fi
+            cat ${G}.fasta | seqkit subseq -r $S:$E | seqkit seq --seq -rp -t DNA | tr [:lower:] [:upper:] | sed ':a;N;$!ba;s/\n//g' >> ${G#NR_genome_}/${G#NR_genome_}_transi.fasta
+    fi
+done < Structure_Asm_relative_reconstruction.csv
+
+mkdir Asm-genome
+while read N ; do
+    echo -e ">$N" > Asm-genome/$N.fasta
+    sed ':a;N;$!ba;s/\n//g' $N/${N}_transi.fasta >> Asm-genome/$N.fasta
+done < Asm-genome-name.csv
+```
