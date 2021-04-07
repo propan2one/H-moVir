@@ -186,7 +186,7 @@ show-coords -r -c -l nucmer_numref.delta > nucmer_numref.coords
 show-snps -T nucmer_numref.delta > nucmer_numref.snps
 ```
 
-Thereafter the analysis is done under R in the [INCOMPLET](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/.Rmd) file.
+Thereafter the analysis is done under R in the [downstream analysis](https://github.com/propan2one/OshV-1-molepidemio#downstream-analysis) part.
 
 ___
 
@@ -209,7 +209,9 @@ ___
 
 ### 09) Reconstruction of genomes in full version
 
+To contribute to the enrichment of the OsHV-1 complete genome databases, a transformation of the non-redundant genomes into complete genomes was performed and the code used can be found in the file [08-DiVir.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/09-Genome_reconstruction.md).
 
+The accession numbers of the genomes can be found in the following table: INCOMPLET
 
 ___
 ___
