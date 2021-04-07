@@ -209,6 +209,8 @@ ___
 
 ### 09) Reconstruction of genomes in full version
 
+
+
 ___
 ___
 
@@ -216,6 +218,8 @@ ___
 
 All the cleaning and analysis of the data was done directly on R, or on Graphpadprism. Once the visualizations were done, they were exported in "eps" format and then reworked on Adobe Illustrator to improve the graphic quality of each panel.
 
-- [a-figure-01.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/a-figure-01.Rmd) shows that the variability in sequencing depth does not affect the analysis of OsHV-1 diversity. 
-- [b-figure-02.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/b-figure-02.Rmd) shows that phylogenetic analysis of OsHV-1 non-redundant genomes reveals that the three OsHV-1 populations belong to the µVar genotype.
-- 
+- [a-figure-01.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/a-figure-01.Rmd) : the variability in sequencing depth does not affect the analysis of OsHV-1 diversity. 
+- [b-figure-02.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/b-figure-02.Rmd) : phylogenetic analysis of OsHV-1 non-redundant genomes reveals that the three OsHV-1 populations belong to the µVar genotype.
+- [c-figure-03.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/c-figure-03.Rmd) : comparative genomics of the 21 NR-genomes confirms that OsHV-1 diversity is higher in Marennes-Oléron than in the two other farming areas.
+- [d-figure-04.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/d-figure-04.Rmd) : diversity of OsHV-1 minor variants is higher in Marenne-Oléron than in the two other farming areas.
+- [e-figure-05.Rmd](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/e-figure-05.Rmd) : some OsHV-1 minor variants found in Marennes-Oléron farming area become major variants in the two other farming areas.
