@@ -1,0 +1,652 @@
+---
+title: "Panels of Figure 5: Some OsHV-1 minor variants found in Marennes-Oléron farming area became major forms in the two other farming areas"
+author: "Delmotte jean"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: TRUE
+    code_folding: "hide"
+    theme: united
+    highlight: tango
+    number_sections: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Fonction to install / load package if it's not here
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+ipak(unique(
+  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly",  "taxize", "ggtree", "tidytree", "broom",
+    "hrbrthemes", "viridis", "ggsci", # palette
+    "cowplot", "scales", "maptools", "gggenes") # plot
+  ) )
+```
+
+```{r Base_Path}
+base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
+```
+
+# Preparation and import of data
+
+Abbreviations : 
+- GC: comparative genomics
+- VC: variant calling 
+
+```{r Color_analysis, echo=FALSE, warning = FALSE, message = FALSE}
+## Convention
+# Color Location Brest:blue | LT:Red | Thau:Green
+# show_col(pal_aaas("default")(10))
+Brest_color = pal_aaas("default")(10)[1]
+LT_color = pal_aaas("default")(10)[2]
+Thau_color = pal_aaas("default")(10)[3]
+
+# Color Polymorphisms 
+# show_col(pal_aaas("default")(10))
+SNP = pal_aaas("default")(10)[2]
+INDEL = pal_jco("default")(10)[3]
+
+# Order
+plot_order_samples <- tibble(ID_EXPERIMENT = c("Brest_2018_NSI_broyage_ind10_noPCR", 
+                                               "Brest_2018_NSI_broyage_ind2_noPCR", 
+                                               "Brest_2018_NSI_broyage_ind4_noPCR", 
+                                               "Brest_2018_NSI_broyage_ind6_noPCR", 
+                                               "Brest_2018_NSI_broyage_ind9_noPCR", 
+                                               "LT_2018_NSI_broyage_ind10_noPCR", 
+                                               "LT_2018_NSI_broyage_ind1_noPCR", 
+                                               "LT_2018_NSI_broyage_ind3_noPCR", 
+                                               "LT_2018_NSI_broyage_ind4_noPCR", 
+                                               "LT_2018_NSI_broyage_ind7_noPCR", 
+                                               "LT_2018_NSI_broyage_ind8_noPCR", 
+                                               "LT_2018_NSI_broyage_ind9_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind10_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind1_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind3_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind4_noPCR",
+                                               "Thau_2018_NSI_broyage_ind5_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind6_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind7_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind8_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind9_noPCR") ) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::left_join(., tibble(LOCATION = c("Brest","LT","Thau"),
+       ORDER= c(1,2,3))) %>%
+  dplyr::mutate(ORDER_samples = stringr::str_replace_all(CONDITION,"ind",""),
+                ORDER_samples = as.numeric(ORDER_samples)) %>%
+  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  arrange(ORDER, ORDER_samples) %>%
+  dplyr::mutate(Samples = stringr::str_replace_all(Samples,"_"," "))
+```
+
+```{r VC_table_consensus}
+# Importation of datas
+# directory <- glue::glue("{base_path}/results/VC_consensus_global")
+# _clean.csv files which contain information for calculating AF
+directory <- glue::glue("{base_path}/results/VC_consensus_global")
+if (missing(directory)) stop("directory is missing")
+Table_04 <- tibble()
+for (file in list.files(path=directory, pattern="*_ann_SnpSift.csv")      ) {
+  file <- stringr::str_replace(file,"_ann_SnpSift.csv","")
+  bcftools <- data.table::fread(glue::glue("{directory}/{file}_ann_bcftools.csv") ) %>%
+    dplyr::rename(POS = V1,
+                  REF = V2,
+                  ALT = V3,
+                  DP = V4,
+                  RO = V5,
+                  AO = V6,
+                  TYPE = V7,
+                  ID_EXPERIMENT = V8)
+  
+  snpsift <- data.table::fread(glue::glue("{directory}/{file}_ann_SnpSift.csv"),
+                               header = FALSE,
+                               skip = 1,
+                               fill=TRUE ) %>%
+    dplyr::rename(CHROM = V1,
+                  POS = V2,
+                  REF= V3,
+                  ALT = V4,
+                  IMPACT = V5,
+                  EFFECT = V6,
+                  HGVS_P = V7,
+                  HGVS_C = V8,
+                  CDNA_POS = V9,
+                  CDNA_LEN = V10,
+                  AA_POS = V11,
+                  AA_LEN = V12,
+                  DISTANCE = V13,
+                  GENEID = V14,
+                  ID_EXPERIMENT = V15)
+  
+  VC <- full_join(bcftools, snpsift) %>% 
+    dplyr::filter(ALT != "<*>") %>%
+    dplyr::mutate(RO = as.integer(RO),
+                  AO = as.integer(AO),
+                  DP = as.integer(DP),
+                  AF = AO / (DP),
+                  UniqueID= glue::glue("{POS}_{REF}>{ALT}"),
+                  ID = stringr::str_replace_all(GENEID,"GENE_","")) %>%
+    select(ID_EXPERIMENT,
+           UniqueID,
+           POS,
+           REF,
+           ALT,
+           DP,
+           AF,
+           everything())
+    # relocate(AF, .after = DP)
+  
+  Table_04 <- dplyr::bind_rows(Table_04,VC)
+}
+
+# Annotation des ORFs
+gff <- data.table::fread(glue::glue("{base_path}/results/Tables/Hemovir_consensus_21_samples_gff.tab"),
+         sep = "\t",
+         fill=TRUE,
+         quote=FALSE) %>%
+  dplyr::filter(primary_tag == "CDS") %>%
+  dplyr::mutate(LENGTH_ORF = end - start -2)
+
+Table_04 <- left_join(Table_04,gff) %>%
+  dplyr::mutate(INFERENCE = 
+                  stringr::str_replace_all(inference,"ab initio prediction:Prodigal:002006, similar to AA sequence:Ostreid_herpesvirus.faa:", "") )
+```
+
+```{r GC_table}
+comparative_genomic <- data.table::fread(glue::glue("{base_path}/results/Tables/nucmer_numref.snps"),
+                  skip = 3,
+         sep = "\t",
+         fill=TRUE,
+         quote=FALSE)
+colnames(comparative_genomic) <-c("POS", "REF", "ALT","POS_ALT", "BUFF","DIST","R", "Q", "FRM","TAGS", "gREF","ID_EXPERIMENT")
+
+# Vector of GC position
+CG_POS <- comparative_genomic %>%
+  select(POS) %>%
+  distinct() %>%
+  pull()
+```
+
+# Data cleaning
+
+```{r nettoyage_3_tables}
+Table4 <- Table_04 %>%
+  select(ID_EXPERIMENT,
+         UniqueID,
+         POS,	REF, ALT, AF) %>%
+  dplyr::rename(AF_cons = AF)
+  
+
+Table3 <- comparative_genomic %>%
+  dplyr::mutate(ID_EXPERIMENT = stringr::str_replace_all(ID_EXPERIMENT, "NR_genome_", ""),
+                UniqueID_rev = glue::glue("{POS_ALT}_{ALT}>{REF}"), ############# ICI REF et ALT sont inversé pour la synchro
+                UniqueID = glue::glue("{POS}_{REF}>{ALT}")) %>%
+  select(ID_EXPERIMENT,
+         UniqueID,
+         POS,	REF, ALT, 
+         POS_ALT, UniqueID_rev)
+```
+
+# Analyse
+
+## Figure 5 A Matrix of the 116 variants which were major or minor according to the samples.
+
+```{r}
+# Détermine le nombre d'ID unique entre les ind en ce basant sur la GC et le VC cons
+Fig5_A <- Table3 %>%
+  dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  select(Genome, UniqueID) %>%
+  left_join(Table4) %>%
+  filter(POS %in% CG_POS) %>%
+  filter(AF_cons < 0.5) %>%
+  mutate_at(vars(Genome,ID_EXPERIMENT), .funs = ~stringr::str_replace_all(.,"_2018_NSI_broyage_"," ")) %>%
+  mutate_at(vars(Genome,ID_EXPERIMENT), .funs = ~stringr::str_replace_all(.,"_noPCR","")) %>%
+  select(-POS, -REF,-ALT) %>%
+  tidyr::pivot_wider(-AF_cons, 
+                   names_from = Genome,
+                   values_from = UniqueID,
+                   values_fill = list(PRESENCE = 0),
+                   values_fn = list(UniqueID = length)) %>%
+  replace(., is.na(.), 0) %>%
+  column_to_rownames(var = "ID_EXPERIMENT") %>%
+  pheatmap(display_numbers = TRUE,
+           number_format = "%1.0f",
+           cluster_rows = FALSE,
+           cluster_cols = FALSE)
+
+hybrid_position <- Table3 %>%
+  dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  select(Genome, UniqueID) %>%
+  left_join(Table4) %>%
+  filter(POS %in% CG_POS) %>%
+  filter(AF_cons < 0.5) %>%
+  mutate_at(vars(Genome,ID_EXPERIMENT), .funs = ~stringr::str_replace_all(.,"_2018_NSI_broyage_"," ")) %>%
+  mutate_at(vars(Genome,ID_EXPERIMENT), .funs = ~stringr::str_replace_all(.,"_noPCR","")) %>%
+  select(UniqueID) %>%
+  distinct() %>%
+  pull()
+  
+length(hybrid_position)
+
+
+Table4 %>%
+  filter(UniqueID %in% hybrid_position) %>%
+  select(-POS, -REF,-ALT) %>%
+  mutate_at(vars(ID_EXPERIMENT), .funs = ~stringr::str_replace_all(.,"_2018_NSI_broyage_"," ")) %>%
+  mutate_at(vars(ID_EXPERIMENT), .funs = ~stringr::str_replace_all(.,"_noPCR","")) %>%
+  tidyr::pivot_wider(names_from = ID_EXPERIMENT,
+                     values_from = AF_cons,
+                     values_fill = list(AF_cons = 0)) %>%
+  relocate(`LT ind4`, .after = UniqueID) %>%
+  relocate(`Brest ind2`, .after = UniqueID) %>%
+  relocate(`LT ind10`, .after = UniqueID) %>%
+  relocate(`LT ind3`, .after = UniqueID) %>%
+  column_to_rownames(var = "UniqueID") %>%
+  pheatmap(display_numbers = TRUE,
+           number_format = "%0.01f",
+           cluster_rows = FALSE,
+           cluster_cols = TRUE)
+
+Table4 %>%
+  filter(UniqueID %in% hybrid_position) %>%
+  select(-POS, -REF,-ALT) %>%
+  mutate_at(vars(ID_EXPERIMENT), .funs = ~stringr::str_replace_all(.,"_2018_NSI_broyage_"," ")) %>%
+  mutate_at(vars(ID_EXPERIMENT), .funs = ~stringr::str_replace_all(.,"_noPCR","")) %>%
+  tidyr::pivot_wider(names_from = ID_EXPERIMENT,
+                     values_from = AF_cons,
+                     values_fill = list(AF_cons = 0)) %>%
+  relocate(`LT ind4`, .after = UniqueID) %>%
+  relocate(`Brest ind2`, .after = UniqueID) %>%
+  relocate(`LT ind10`, .after = UniqueID) %>%
+  relocate(`LT ind3`, .after = UniqueID) %>%
+  data.table::fwrite(glue::glue("{base_path}/results/Tables/Fig5_table.csv"),
+                     sep = "\t",
+                     quote=FALSE,
+                     row.names = FALSE,
+                     col.names = TRUE)
+```
+
+```{r}
+Supp_fig5_global <- Table4 %>%
+  filter(POS %in% CG_POS) %>%
+  filter(AF_cons < 0.5) %>%
+  # filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>%
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  select(Genome, UniqueID))  %>%
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>%
+  ggplot(aes(x = UniqueID ,y=AF_cons, color = LOCATION) ) +
+           geom_point(shape = 21, size = 3) +
+           labs(x = "Ranked freq",
+                y = "Variant frequency (%)") +
+  geom_hline(yintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=0, size = 6)) +
+  facet_grid(Genome~ID_EXPERIMENT) +
+  ylim(0, 0.50) +
+  geom_hline(yintercept = 0, size = 0.25, color = "black") +
+  scale_color_manual(values=list(Brest = Brest_color, 
+                                LT = LT_color,
+                                Thau = Thau_color))
+```
+
+## Figure 5 B Dot plot of the 29 minor variants of Mo ind10 which are also found as major variants in Mo samples
+
+```{r}
+Supp_fig_5_Lt_10 <- Table4 %>%
+  filter(POS %in% CG_POS) %>%
+  filter(AF_cons < 0.5) %>%
+  filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind10_noPCR") %>%
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  select(Genome, UniqueID))  %>%
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>%
+  ggplot(aes(x = UniqueID ,y=AF_cons, color = LOCATION) ) +
+           geom_point(shape = 21, size = 3) +
+           labs(x = "Ranked freq",
+                y = "Variant frequency (%)") +
+  geom_hline(yintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=0, size = 6)) +
+  facet_grid(Genome~ID_EXPERIMENT) +
+  ylim(0, 0.50) +
+  geom_hline(yintercept = 0, size = 0.25, color = "black") +
+  scale_color_manual(values=list(Brest = Brest_color, 
+                                LT = LT_color,
+                                Thau = Thau_color))
+```
+
+## Figure 5 C Pie charts show frequency of the minority variant found at position 65,016 of the NR-genome in Mo ind1/3/7/8/9/10.
+
+```{r}
+LT_10 <- Table4 %>%
+  rename(Genome = ID_EXPERIMENT,
+         AF = AF_cons) %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th"))
+
+# graph
+mutation ="65016_T>A"
+
+Fig5_D_1 <- Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind10_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID)) %>%
+  dplyr::select(ID_EXPERIMENT, UniqueID, AF_cons) %>%
+  mutate(RF_cons = 1-AF_cons) %>%
+  pivot_longer(c(-UniqueID, -ID_EXPERIMENT),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == mutation) %>%
+  ggplot(aes(x="", y=Frequency, fill=BASE))+
+  geom_bar(stat="identity", width = 1)+
+  coord_polar("y", start=0)+
+  # geom_text(aes(x=1, y = sum(Frequency) - Frequency/2, label=label))+
+  # facet_wrap(vars(UniqueID)) +
+  ggtitle(glue(" LT 10 pour {mutation}")) +
+  theme_void()
+
+Fig5_D_2 <- Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind10_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID))  %>% 
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>% 
+  # filter(LOCATION == "Brest") %>% view()
+  left_join(.,LT_10) %>%
+  dplyr::mutate(RF = 1 - AF) %>%
+  select(UniqueID, Genome, AF ,RF) %>%
+  pivot_longer(c(-UniqueID, -Genome),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == mutation) %>%
+    ggplot(aes(x="", y=Frequency, fill=BASE))+
+  geom_bar(stat="identity", width = 1)+
+  coord_polar("y", start=0)+
+  # geom_text(aes(x=1, y = Frequency*100, label=label))+
+  ggtitle(glue(" LT 10 pour {mutation}")) +
+  # facet_wrap(vars(UniqueID)) +
+  facet_grid(UniqueID ~ Genome) +
+  theme_void()
+
+# data
+Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind10_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID))  %>% 
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>% 
+  # filter(LOCATION == "Brest") %>% view()
+  left_join(.,LT_10) %>%
+  dplyr::mutate(RF = 1 - AF) %>%
+  select(UniqueID, Genome, AF ,RF) %>%
+  pivot_longer(c(-UniqueID, -Genome),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == mutation)
+```
+
+Note: Phylogenetic trees were created using Figure 2B and were modified on adobe illustrator to highlight the relationships.
+
+## Figure 5 E Dot plot of the 85 minor variants of Mo ind3 which are also found as major variants in Mo ind4/10 and in all samples from Br and Th
+
+```{r}
+Supp_fig_5_Lt_3 <- Table4 %>%
+  filter(POS %in% CG_POS) %>%
+  filter(AF_cons < 0.5) %>%
+  filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>%
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  select(Genome, UniqueID))  %>%
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>%
+  ggplot(aes(x = UniqueID ,y=AF_cons, color = LOCATION) ) +
+           geom_point(shape = 21, size = 3) +
+           labs(x = "Ranked freq",
+                y = "Variant frequency (%)") +
+  geom_hline(yintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=0, size = 6)) +
+  facet_grid(Genome~ID_EXPERIMENT) +
+  ylim(0, 0.50) +
+  geom_hline(yintercept = 0, size = 0.25, color = "black") +
+  scale_color_manual(values=list(Brest = Brest_color, 
+                                LT = LT_color,
+                                Thau = Thau_color))
+```
+
+## Figure 5 F The minor variant found in Mo ind3 at position 57,091 and 65,624 of the C-NR-genome corresponds to major variants other samples
+
+### Figure 5 F position 57,091
+
+```{r}
+
+## LT ind3 and Brest and LT of others
+LT_3 <- Table4 %>%
+  rename(Genome = ID_EXPERIMENT,
+         AF = AF_cons) %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) 
+
+# graph
+mutation ="57091_T>C"
+Fig5_C_3 <- Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID)) %>%
+  dplyr::select(ID_EXPERIMENT, UniqueID, AF_cons) %>%
+  mutate(RF_cons = 1-AF_cons) %>%
+  pivot_longer(c(-UniqueID, -ID_EXPERIMENT),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == mutation) %>%
+  ggplot(aes(x="", y=Frequency, fill=BASE))+
+  geom_bar(stat="identity", width = 1)+
+  coord_polar("y", start=0)+
+  ggtitle(mutation) +
+  theme_void()
+
+Fig5_C_4 <- Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID))  %>% 
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>% 
+  left_join(.,LT_3) %>%
+  dplyr::mutate(RF = 1 - AF) %>%
+  select(UniqueID, Genome, AF ,RF) %>%
+  pivot_longer(c(-UniqueID, -Genome),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == mutation) %>%
+    ggplot(aes(x="", y=Frequency, fill=BASE))+
+  geom_bar(stat="identity", width = 1)+
+  coord_polar("y", start=0)+
+  facet_grid(UniqueID ~ Genome) +
+  theme_void()
+
+# data
+Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID))  %>% 
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>% 
+  left_join(.,LT_3) %>%
+  dplyr::mutate(RF = 1 - AF) %>%
+  select(UniqueID, Genome, AF ,RF) %>%
+  pivot_longer(c(-UniqueID, -Genome),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == mutation)
+```
+
+### Figure 5 F position 65,624
+
+```{r}
+# graph
+mutation ="65624_C>T"
+
+Fig5_C_1 <- Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID)) %>%
+  dplyr::select(ID_EXPERIMENT, UniqueID, AF_cons) %>%
+  mutate(RF_cons = 1-AF_cons) %>%
+  pivot_longer(c(-UniqueID, -ID_EXPERIMENT),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == mutation) %>%
+  ggplot(aes(x="", y=Frequency, fill=BASE))+
+  geom_bar(stat="identity", width = 1)+
+  coord_polar("y", start=0)+
+  theme_void()
+
+Fig5_C_2 <- Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID))  %>% 
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>% 
+  left_join(.,LT_3_brest) %>%
+  dplyr::mutate(RF = 1 - AF) %>%
+  select(UniqueID, Genome, AF ,RF) %>%
+  pivot_longer(c(-UniqueID, -Genome),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == mutation) %>%
+    ggplot(aes(x="", y=Frequency, fill=BASE))+
+  geom_bar(stat="identity", width = 1)+
+  coord_polar("y", start=0)+
+  facet_grid(UniqueID ~ Genome) +
+  theme_void()
+
+# Data
+Table4 %>%
+  dplyr::filter(POS %in% CG_POS) %>%
+  dplyr::filter(AF_cons < 0.5) %>%
+  dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>% 
+  left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
+  dplyr::select(Genome, UniqueID))  %>% 
+  drop_na() %>%
+  mutate(LOCATION = str_extract(Genome, "^.*_2"),
+         LOCATION = str_replace_all(LOCATION, "_2",""),
+         Genome = str_replace_all(Genome, "_2018_NSI_broyage_","_"),
+         Genome = str_replace_all(Genome, "_noPCR",""),
+         Genome = str_replace_all(Genome, "Brest","Br"),
+         Genome = str_replace_all(Genome, "Thau","Th")) %>% 
+  left_join(.,LT_3_brest) %>%
+  dplyr::mutate(RF = 1 - AF) %>%
+  select(UniqueID, Genome, AF ,RF) %>%
+  pivot_longer(c(-UniqueID, -Genome),
+               names_to = "BASE", 
+               values_to = "Frequency") %>%
+  dplyr::filter(UniqueID == "65624_C>T")
+```
+
+Note: Phylogenetic trees were created using Figure 2B and were modified on adobe illustrator to highlight the relationships.
+
+```{r}
+Fig5_bis <- list(Fig5_C_1, Fig5_C_2, Fig5_C_3, Fig5_C_4, Fig5_D_1, Fig5_D_2)
+Fig5_name <- c("Fig5_C_1", "Fig5_C_2", "Fig5_C_3", "Fig5_C_4", "Fig5_D_1", "Fig5_D_2")
+
+
+i = 1
+while (i <=length(Fig5_bis)) {
+  ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.jpeg"),
+         plot = Fig5_bis[[i]],
+         device = "jpeg",
+         path = glue::glue("{base_path}/results/Figures/jpeg/Figure_5"),
+         width = 180, units = "mm", dpi = 300)
+  
+  ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.tiff"),
+         plot = Fig5_bis[[i]],
+         device = "tiff",
+         path = glue::glue("{base_path}/results/Figures/tiff/Figure_5"),
+         width = 180, units = "mm", dpi = 300)
+  
+  ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.eps"),
+         plot = Fig5_bis[[i]],
+         device = "eps",
+         path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_5"),
+         width = 180, units = "mm", dpi = 300)
+  i = i+1
+}
+```
+
+
+```{r}
+sessionInfo()
+```
