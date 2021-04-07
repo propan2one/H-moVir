@@ -22,7 +22,7 @@ The virus genomes used in the study were downloaded directly from NCBI as follow
 
 | Genome                                                                                                             |  Id accession |
 |--------------------------------------------------------------------------------------------------------------------|---------------|
-| [Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KY242785.1/) |    KY242785.1 |
+| ![Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KY242785.1/) |    KY242785.1 |
 | [Ostreid_herpesvirus_1_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/AY509253.2/)                           |  AY509253.2   |
 | [Ostreid_herpesvirus_1_strain_microVar_variant_B_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KY271630.1/) |    KY271630.1 |
 | [Ostreid_herpesvirus_1_isolate_ZK0118_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/MF509813.1/)            |   MF509813.1  |
