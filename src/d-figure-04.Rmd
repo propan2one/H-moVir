@@ -1,0 +1,903 @@
+---
+title: "Panels of Figure 4: Diversity of OsHV-1 minor variants is higher in Marenne-Oléron than in the two other farming areas"
+author: "Delmotte jean"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: TRUE
+    code_folding: "hide"
+    theme: united
+    highlight: tango
+    number_sections: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Fonction to install / load package if it's not here
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+ipak(unique(
+  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly",  "taxize", "ggtree", "tidytree", "broom",
+    "hrbrthemes", "viridis", "ggsci", # palette
+    "cowplot", "scales", "maptools", "gggenes") # plot
+  ) )
+```
+
+```{r Base_Path}
+base_path <- "~/Documents/Hemovir" # Base location for the folder
+```
+
+# Preparation and import of data
+
+Abbreviations : 
+- GC: comparative genomics
+- VC: variant calling 
+
+```{r Color_analysis, echo=FALSE, warning = FALSE, message = FALSE}
+## Convention
+# Color Location Brest:blue | LT:Red | Thau:Green
+# show_col(pal_aaas("default")(10))
+Brest_color = pal_aaas("default")(10)[1]
+LT_color = pal_aaas("default")(10)[2]
+Thau_color = pal_aaas("default")(10)[3]
+
+# Color Polymorphisms 
+# show_col(pal_aaas("default")(10))
+SNP = pal_aaas("default")(10)[2]
+INDEL = pal_jco("default")(10)[3]
+
+# Order
+plot_order_samples <- tibble(ID_EXPERIMENT = c("Brest_2018_NSI_broyage_ind10_noPCR", 
+                                               "Brest_2018_NSI_broyage_ind2_noPCR", 
+                                               "Brest_2018_NSI_broyage_ind4_noPCR", 
+                                               "Brest_2018_NSI_broyage_ind6_noPCR", 
+                                               "Brest_2018_NSI_broyage_ind9_noPCR", 
+                                               "LT_2018_NSI_broyage_ind10_noPCR", 
+                                               "LT_2018_NSI_broyage_ind1_noPCR", 
+                                               "LT_2018_NSI_broyage_ind3_noPCR", 
+                                               "LT_2018_NSI_broyage_ind4_noPCR", 
+                                               "LT_2018_NSI_broyage_ind7_noPCR", 
+                                               "LT_2018_NSI_broyage_ind8_noPCR", 
+                                               "LT_2018_NSI_broyage_ind9_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind10_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind1_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind3_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind4_noPCR",
+                                               "Thau_2018_NSI_broyage_ind5_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind6_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind7_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind8_noPCR", 
+                                               "Thau_2018_NSI_broyage_ind9_noPCR") ) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","TYPE","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::left_join(., tibble(LOCATION = c("Brest","LT","Thau"),
+       ORDER= c(1,2,3))) %>%
+  dplyr::mutate(ORDER_samples = stringr::str_replace_all(CONDITION,"ind",""),
+                ORDER_samples = as.numeric(ORDER_samples)) %>%
+  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  arrange(ORDER, ORDER_samples) %>%
+  dplyr::mutate(Samples = stringr::str_replace_all(Samples,"_"," "))
+```
+
+```{r Table04_VC_importation_datas}
+# Importation of datas
+
+# _clean.csv files which contain information for calculating AF
+directory <- glue::glue("{base_path}/results/VC_consensus_global")
+if (missing(directory)) stop("directory is missing")
+Table_04 <- tibble()
+for (file in list.files(path=directory, pattern="*_ann_SnpSift.csv")      ) {
+  file <- stringr::str_replace(file,"_ann_SnpSift.csv","")
+  bcftools <- data.table::fread(glue::glue("{directory}/{file}_ann_bcftools.csv") ) %>%
+    dplyr::rename(POS = V1,
+                  REF = V2,
+                  ALT = V3,
+                  DP = V4,
+                  RO = V5,
+                  AO = V6,
+                  TYPE = V7,
+                  ID_EXPERIMENT = V8)
+  
+  snpsift <- data.table::fread(glue::glue("{directory}/{file}_ann_SnpSift.csv"),
+                               header = FALSE,
+                               skip = 1,
+                               fill=TRUE ) %>%
+    dplyr::rename(CHROM = V1,
+                  POS = V2,
+                  REF= V3,
+                  ALT = V4,
+                  IMPACT = V5,
+                  EFFECT = V6,
+                  HGVS_P = V7,
+                  HGVS_C = V8,
+                  CDNA_POS = V9,
+                  CDNA_LEN = V10,
+                  AA_POS = V11,
+                  AA_LEN = V12,
+                  DISTANCE = V13,
+                  GENEID = V14,
+                  ID_EXPERIMENT = V15)
+  
+  VC <- full_join(bcftools, snpsift) %>% 
+    dplyr::filter(ALT != "<*>") %>%
+    dplyr::mutate(RO = as.integer(RO),
+                  AO = as.integer(AO),
+                  DP = as.integer(DP),
+                  AF = AO / (DP),
+                  UniqueID= glue::glue("{POS}_{REF}>{ALT}"),
+                  ID = stringr::str_replace_all(GENEID,"GENE_","")) %>%
+    select(ID_EXPERIMENT,
+           UniqueID,
+           POS,
+           REF,
+           ALT,
+           DP,
+           AF,
+           everything())
+    # relocate(AF, .after = DP)
+  
+  Table_04 <- dplyr::bind_rows(Table_04,VC)
+}
+
+# Annotation des ORFs
+gff <- data.table::fread(glue::glue("{base_path}/results/Tables/Hemovir_consensus_21_samples_gff.tab"),
+         sep = "\t",
+         fill=TRUE,
+         quote=FALSE) %>%
+  dplyr::filter(primary_tag == "CDS") %>%
+  dplyr::mutate(LENGTH_ORF = end - start -2)
+
+Table_04 <- left_join(Table_04,gff) %>%
+  dplyr::mutate(INFERENCE = 
+                  stringr::str_replace_all(inference,"ab initio prediction:Prodigal:002006, similar to AA sequence:Ostreid_herpesvirus.faa:", "") )
+
+VC_majority_var <- Table_04 %>% 
+  mutate(N_poly = if_else(stringr::str_detect(REF,"N"), "*","")) %>%
+  filter(N_poly != "*") %>%
+  filter(AF > 0.50) %>%
+  select(POS) %>%
+  distinct() %>%
+  pull()
+```
+
+```{r TABLE_03}
+# importation Comparative genomics
+comparative_genomic <- data.table::fread(glue::glue("{base_path}/results/Tables/nucmer_numref.snps"),
+                  skip = 3,
+         sep = "\t",
+         fill=TRUE,
+         quote=FALSE)
+colnames(comparative_genomic) <-c("POS", "REF", "ALT","POS_ALT", "BUFF","DIST","R", "Q", "FRM","TAGS", "gREF","ID_EXPERIMENT")
+```
+
+# Analysis
+
+During the analysis of the minority variants, we observed that some genomic variations with an allelic frequency greater than 50% were not found in comparative genomics. To go further in the analyses, we checked if this was a real problem or an artifact. 
+
+We first took out these positions and recovered the upstream and downstream positions so that we could recover the sequences.
+
+```{r}
+CG_POS <- comparative_genomic %>%
+  select(POS) %>%
+  distinct() %>%
+  pull()
+
+Table_04 %>% 
+  filter(POS %in% CG_POS)
+
+GC <- comparative_genomic %>%
+  mutate(GC = glue::glue("{REF}>{ALT}")) %>%
+  select(POS,GC)
+
+position_comparison_VC_GC <- Table_04 %>%
+  filter(AF > 0.50) %>%
+  select(ID_EXPERIMENT, UniqueID, AF) %>%
+  tidyr::pivot_wider(names_from = ID_EXPERIMENT,
+                    values_from = AF,
+                    values_fill = list(AF = 0)) %>%
+  separate(UniqueID , into = c("POS","VC"), sep = "_") %>%
+  mutate(POS = as.numeric(POS)) %>%
+  full_join(.,GC) %>%
+  relocate(GC, .after = "VC") %>%
+  select(POS, VC, GC) %>%
+  distinct() %>% 
+  filter(is.na(VC) | is.na(GC))
+
+# NA in GC
+Table_04 %>%
+  filter(AF > 0.50) %>%
+  select(ID_EXPERIMENT, UniqueID, AF) %>%
+  tidyr::pivot_wider(names_from = ID_EXPERIMENT,
+                    values_from = AF,
+                    values_fill = list(AF = 0)) %>%
+  separate(UniqueID , into = c("POS","VC"), sep = "_") %>%
+  mutate(POS = as.numeric(POS)) %>%
+  full_join(.,GC) %>%
+  relocate(GC, .after = "VC") %>%
+  arrange(POS) %>%
+  mutate(GC = as.character(GC)) %>%
+  filter(is.na(GC)) %>%
+  select(POS) %>% 
+  mutate(pos_av = POS-10,
+         pos_ap = POS+10) #%>%
+  # data.table::fwrite(glue::glue("{base_path}/results/Tables/Pb_GC.csv"),
+  #                    sep = "\t",
+  #                    quote=FALSE,
+  #                    row.names = FALSE,
+  #                    col.names = FALSE)
+
+# NA in VC
+Table_04 %>%
+  filter(AF > 0.50) %>%
+  select(ID_EXPERIMENT, UniqueID, AF) %>%
+  tidyr::pivot_wider(names_from = ID_EXPERIMENT,
+                    values_from = AF,
+                    values_fill = list(AF = 0)) %>%
+  separate(UniqueID , into = c("POS","VC"), sep = "_") %>%
+  mutate(POS = as.numeric(POS)) %>%
+  full_join(.,GC) %>%
+  relocate(GC, .after = "VC") %>%
+  arrange(POS) %>%
+  mutate(GC = as.character(GC)) %>%
+  filter(is.na(VC)) %>%
+  select(POS) %>%
+  distinct() %>%
+  mutate(pos_av = POS-10,
+         pos_ap = POS+10) #%>%
+  # data.table::fwrite(glue::glue("{base_path}/results/Tables/Pb_sets_VC.csv"),
+  #                    sep = "\t",
+  #                    quote=FALSE,
+  #                    row.names = FALSE,
+  #                    col.names = FALSE)
+
+```
+
+We then used the [seqkit tool](https://bioinf.shenwei.me/seqkit/usage/) to recover the positions at the problematic places:
+
+```bash
+genome=/OshV-1-molepidemio/results/NR-Asm_consensus/C-NR-genome.fasta
+mkdir /OshV-1-molepidemio/raw/Set_verification # change output folder if necessary
+#GC
+while read pos av ap ; do echo -e "${pos}\t$(seqkit subseq  -r ${av}:${ap} $genome | seqkit seq --seq)" >> /OshV-1-molepidemio/raw/Set_verification/GC_pb_seq.csv; done < ~/OshV-1-molepidemio/results/Tables/GC_pb_seq.csv
+
+#VC
+while read pos av ap ; do echo -e "${pos}\t$(seqkit subseq  -r ${av}:${ap} $genome | seqkit seq --seq)" >> /OshV-1-molepidemio/raw/Set_verification/VC_pb_seq.csv; done < ~/OshV-1-molepidemio/results/Tables/Pb_sets_VC.csv
+```
+
+Note: In this approach there are no positions located between the beginning (e.g. 1 to 9) and the end, otherwise it would cause problems to output the sequences with seqkit.
+
+```{r}
+GC_pb_seq.csv <- data.table::fread(glue::glue("{base_path}/raw/Set_verification/GC_pb_seq.csv")) %>%
+  select(-V2, -V3) %>%
+  rename(POS = V1, 
+         SEQ_GC = V4) %>%
+    distinct() %>%
+    as_tibble() %>%
+    filter(POS %in% position_comparison_VC_GC$POS) %>%
+    left_join(position_comparison_VC_GC, .)
+
+VC_pb_seq.csv <- data.table::fread(glue::glue("{base_path}/raw/Set_verification/VC_pb_seq.csv")) %>%
+  select(-V2, -V3) %>%
+  rename(POS = V1, 
+         SEQ_VC = V4) %>%
+    distinct() %>%
+    as_tibble() %>%
+    filter(POS %in% position_comparison_VC_GC$POS) %>%
+    left_join(position_comparison_VC_GC, .)
+
+```
+
+The changes were then visualized directly on the sequence using [Ugene](http://ugene.net/). 
+
+![Mutation_14683](~/Documents/OshV-1-molepidemio/image/Mutation_14683.png)
+
+All the differences observed between variant calling and comparative genomics are mainly due to a lack of parsimony representation between the two methods (see example above). This is a common problem in variant calling analysis, see [variant normalization](https://genome.sph.umich.edu/wiki/Variant_Normalization). However, in some cases the difference between the two methods was not so clear and we did not fully elucidate the origin of the variation (see example below). Thus, we have chosen to include mutations with allelic frequencies strictly lower than 50% for the analysis of the positions of minority variants.
+
+![Mutation_65365](~/Documents/OshV-1-molepidemio/image/Mutation_around_65365.png)
+
+
+```{r}
+Table_04 <- Table_04 %>% # Here we substract the position of the genomic comparative
+  filter(!POS %in% CG_POS) %>%
+  mutate(N_poly = if_else(stringr::str_detect(REF,"N"), "*","")) %>%
+  filter(N_poly != "*") %>% # remove postion where there is N
+  filter(AF < 0.50) %>% # remove position which are similar to GC but the cut is different
+  filter(POS != 1)
+```
+
+### Overview of mutation across samples
+
+```{r}
+plot_order_polymorphismes <- tibble::tibble(TYPE = c("SNP","INDEL","MNP","OTHER"),
+               ORDER_poly = c(1,2,3,4))
+
+Table_04 %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::mutate(Samples = stringr::str_replace_all(Samples,"_"," ")) %>%
+  group_by(Samples,VAR, TYPE) %>%
+  summarise(N=n()) %>%
+  left_join(.,plot_order_polymorphismes) %>%
+  dplyr::left_join(.,plot_order_samples %>%
+                     dplyr::select(VAR, Samples,ORDER,ORDER_samples)) %>%
+  dplyr::ungroup() %>%
+  mutate(Samples = forcats::as_factor(Samples)) %>%
+  tidyr::unite(ORDER_poly, TYPE, col = POLYMORPHISME_TYPE, sep = " ") %>% # Quick and dirty reorder
+  ggplot(aes(x = forcats::fct_reorder2(Samples, ORDER_samples, ORDER), y =  N, fill=VAR))+
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    theme_minimal() +
+    labs(x = "",
+         y = "Number of polymorphismes")+
+    facet_grid(.~POLYMORPHISME_TYPE, scales = "free_x" )+
+    scale_fill_aaas()
+```
+
+### Impact accross the genomes
+
+```{r}
+Consensus_size = 186356
+Table_04 %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::filter(TYPE != "REF") %>%
+  dplyr::mutate(Simplified_type = if_else(TYPE == "SNP", "SNP","INDEL"),
+                N_poly = if_else(stringr::str_detect(REF,"N"), "*","")) %>%
+  ggplot(aes(x = POS, fill = Simplified_type)) +
+  geom_histogram(binwidth = 1000) +
+  geom_bar(binwidth = 1000) +
+  xlim(0, Consensus_size) +
+  facet_grid(VAR ~.) +
+  theme_minimal()+
+  geom_vline(xintercept = Consensus_size, linetype = "dotdash", size = 0.5, color = "#5C5C5C")
+```
+
+## Set analysis of polymporphismes
+
+```{r}
+Table_04 %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::filter(TYPE != "REF") %>%
+  dplyr::mutate(Simplified_type = if_else(TYPE == "SNP", "SNP","INDEL")) %>%
+  dplyr::select(LOCATION, Samples, Simplified_type) %>%
+  group_by(LOCATION, Simplified_type) %>%
+  summarise(N = n())
+
+Table_04 %>%
+  dplyr::select(UniqueID,
+                ID_EXPERIMENT,
+                AF) %>%
+  left_join(.,plot_order_samples %>%
+              dplyr::select(ID_EXPERIMENT,Samples)) %>%
+  dplyr::select(-ID_EXPERIMENT) %>%
+  dplyr::mutate(AF = dplyr::case_when(AF >=0.05 ~ 1,
+                                      TRUE ~ 0)) %>%
+  tidyr::pivot_wider(names_from = Samples,
+                     values_from = AF,
+                     values_fill = list(AF = 0)) %>%
+  as.data.frame() %>%
+  UpSetR::upset(nsets = 30,
+                nintersects = NA,
+                query.legend = "top")
+```
+
+### Figure 4 B Analysis of all minority variations at the conchyliculture area level
+
+```{r}
+Table_05_binary_matrix <- Table_04 %>%
+ dplyr::select(UniqueID,
+               ID_EXPERIMENT,
+               AF) %>%
+ dplyr::mutate(AF = dplyr::case_when(AF >=0.05 ~ 1,
+                                     TRUE ~ 0)) %>%
+ tidyr::pivot_wider(names_from = ID_EXPERIMENT,
+                    values_from = AF,
+                    values_fill = list(AF = 0)) %>%
+ as.data.frame() %>%
+  select(UniqueID,
+         Brest_2018_NSI_broyage_ind10_noPCR,
+         Brest_2018_NSI_broyage_ind2_noPCR,
+         Brest_2018_NSI_broyage_ind4_noPCR,
+         Brest_2018_NSI_broyage_ind6_noPCR,
+         Brest_2018_NSI_broyage_ind9_noPCR,
+         LT_2018_NSI_broyage_ind10_noPCR,
+         LT_2018_NSI_broyage_ind1_noPCR,
+         LT_2018_NSI_broyage_ind3_noPCR,
+         LT_2018_NSI_broyage_ind4_noPCR,
+         LT_2018_NSI_broyage_ind7_noPCR,
+         LT_2018_NSI_broyage_ind8_noPCR,
+         LT_2018_NSI_broyage_ind9_noPCR,
+         Thau_2018_NSI_broyage_ind10_noPCR,
+         Thau_2018_NSI_broyage_ind1_noPCR,
+         Thau_2018_NSI_broyage_ind3_noPCR,
+         Thau_2018_NSI_broyage_ind4_noPCR,
+         Thau_2018_NSI_broyage_ind5_noPCR,
+         Thau_2018_NSI_broyage_ind6_noPCR,
+         Thau_2018_NSI_broyage_ind7_noPCR,
+         Thau_2018_NSI_broyage_ind8_noPCR,
+         Thau_2018_NSI_broyage_ind9_noPCR) %>%
+  tibble::column_to_rownames("UniqueID")  %>%
+  as.matrix()
+
+## Matrix compose of all experiments and all overall ensemble from geographique datas
+Matrix_SET <- Table_04 %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::mutate(SET = glue::glue("{LOCATION}_{YEARS}"),
+                SET = as.character(SET)) %>%
+  dplyr::select(ID_EXPERIMENT, SET) %>%
+  dplyr::distinct() %>% table()
+
+Table_06 <-Table_05_binary_matrix %*% Matrix_SET %>%
+  as.data.frame() %>%
+  rownames_to_column("UniqueID")
+```
+
+
+```{r Figure_04_C_VennDia_all_samples}
+Table_06 %>%
+  tidyr::pivot_longer(-UniqueID) %>%
+  # dplyr::filter(value >= 2 ) %>% # Supprime les données présente en 1 exemplaire
+  dplyr::mutate(value = dplyr::case_when(value > 0 ~ 1,
+                                      TRUE ~ 0)) %>%
+  dplyr::mutate(name = stringr::str_replace_all(name,"_2018",""))  %>%
+  tidyr::pivot_wider(names_from = name,
+                     values_from = value,
+                     values_fill = list(value = 0)) %>%
+  column_to_rownames(var = "UniqueID") %>%
+  as.matrix() %>%
+  vennDiagram()
+# dev.copy2pdf(file=glue::glue("{base_path}/results/Figures/eps_svg/Figure_4/Figure_04_C_VennDia_all_samples.pdf"),out.type="cairo", width=18)
+```
+
+```{r}
+# Dicotomie of each sets
+Three_sets <- Table_06 %>%
+  tidyr::pivot_longer(-UniqueID) %>%
+  # dplyr::filter(value >= 2 ) %>% # Supprime les données présente en 1 exemplaire
+  dplyr::mutate(value = dplyr::case_when(value > 0 ~ 1,
+                                      TRUE ~ 0)) %>%
+  tidyr::pivot_wider(names_from = name,
+                     values_from = value,
+                     values_fill = list(value = 0)) %>%
+  mutate(rowsum = select(., -UniqueID) %>% pmap_dbl(~sum(c(...)))) %>%
+  dplyr::filter(rowsum == 3) %>%
+  dplyr::select(UniqueID) %>%
+  pull()
+
+# Ensemble de 2: 
+Brest_U_Thau <- Table_06 %>%
+  dplyr::filter(!UniqueID %in% Three_sets) %>%
+  tidyr::pivot_longer(-UniqueID) %>%
+  dplyr::mutate(value = dplyr::case_when(value > 0 ~ 1,
+                                      TRUE ~ 0)) %>%
+  tidyr::pivot_wider(names_from = name,
+                     values_from = value,
+                     values_fill = list(value = 0)) %>%
+  dplyr::select(-LT_2018) %>%
+  mutate(rowsum = select(., -UniqueID) %>% pmap_dbl(~sum(c(...)))) %>%
+  dplyr::filter(rowsum == 2) %>%
+  dplyr::select(UniqueID) %>%
+  pull()
+
+Brest_U_LT <- Table_06 %>%
+  dplyr::filter(!UniqueID %in% Three_sets) %>%
+  tidyr::pivot_longer(-UniqueID) %>%
+  dplyr::mutate(value = dplyr::case_when(value > 0 ~ 1,
+                                      TRUE ~ 0)) %>%
+  tidyr::pivot_wider(names_from = name,
+                     values_from = value,
+                     values_fill = list(value = 0)) %>%
+  dplyr::select(-Thau_2018) %>%
+  mutate(rowsum = select(., -UniqueID) %>% pmap_dbl(~sum(c(...)))) %>%
+  dplyr::filter(rowsum == 2) %>%
+  dplyr::select(UniqueID) %>%
+  pull()
+
+LT_U_Thau <- Table_06 %>%
+  dplyr::filter(!UniqueID %in% Three_sets) %>%
+  tidyr::pivot_longer(-UniqueID) %>%
+  dplyr::mutate(value = dplyr::case_when(value > 0 ~ 1,
+                                      TRUE ~ 0)) %>%
+  tidyr::pivot_wider(names_from = name,
+                     values_from = value,
+                     values_fill = list(value = 0)) %>%
+  dplyr::select(-Brest_2018) %>%
+  mutate(rowsum = select(., -UniqueID) %>% pmap_dbl(~sum(c(...)))) %>%
+  dplyr::filter(rowsum == 2) %>%
+  dplyr::select(UniqueID) %>%
+  pull()
+
+unique <- Table_06 %>%
+  tidyr::pivot_longer(-UniqueID) %>%
+  # dplyr::filter(value >= 2 ) %>% # Supprime les données présente en 1 exemplaire
+  dplyr::mutate(value = dplyr::case_when(value > 0 ~ 1,
+                                      TRUE ~ 0)) %>%
+  tidyr::pivot_wider(names_from = name,
+                     values_from = value,
+                     values_fill = list(value = 0)) %>%
+  mutate(rowsum = select(., -UniqueID) %>% pmap_dbl(~sum(c(...)))) %>%
+  dplyr::filter(rowsum == 1) %>%
+  dplyr::select(UniqueID) %>%
+  pull()
+```
+
+## Figure 4 C Variance analysis on minority variants accross samples
+
+```{r}
+N_Brest=5
+N_Thau=7
+N_LT=9
+
+annotation_row_pheatmap <-Table_06 %>%
+  dplyr::mutate(Sets = 
+                  case_when(
+                    Brest_2018  >= 1 & Thau_2018 == 0 & LT_2018 == 0 ~ "Br",
+                    Brest_2018  == 0 & Thau_2018 >= 1 & LT_2018 == 0 ~ "Th",
+                    Brest_2018  == 0 & Thau_2018 == 0 & LT_2018 >= 1 ~ "Lt",
+                    Brest_2018  >= 1  & Thau_2018 >= 1 &  LT_2018 >=1 ~ "Common",
+                    Brest_2018  >= 1  & Thau_2018 >= 1 & LT_2018 == 0 ~ "Br Th",
+                    Brest_2018  >= 1  & Thau_2018 == 0 & LT_2018 >= 1 ~ "Br Lt",
+                    Brest_2018  == 0  & Thau_2018 >= 1 & LT_2018 >= 1 ~ "Lt Th")
+                ) %>%
+  left_join(., tibble(Sets = c("Common", "Br Th", "Br Lt", "Lt Th", "Br", "Lt", "Th"),
+                      Order = c(1,2,3,4,5,6,7) )) %>%
+  arrange((Order)) 
+
+annotation_colors = list(Sets = c(Common = "grey",
+                                  `Br Th` = "#008B8B",
+                                  `Br Lt` = "#8B008B",
+                                  `Lt Th` = "#FFFF99",
+                                  Br = Brest_color,
+                                  Lt = LT_color,
+                                  Th = Thau_color))
+
+Figure_04_C_variance_global_consensus <- Table_04 %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  dplyr::mutate(Samples = stringr::str_replace_all(Samples,"_"," ")) %>%
+  dplyr::select(UniqueID,
+               Samples,
+               AF) %>%
+ tidyr::pivot_wider(names_from = Samples,
+                    values_from = AF,
+                    values_fill = list(AF = 0)) %>%
+  left_join(.,annotation_row_pheatmap) %>%
+  arrange(Order) %>%
+  # filter(Sets != "Common") %>% # Allows to check that the clustering is not modified with the common set
+  dplyr::select(-Order, -Sets, -Brest_2018, -LT_2018, -Thau_2018) %>% 
+  tibble::column_to_rownames(var="UniqueID") %>%
+  as.matrix() %>%
+  pheatmap::pheatmap(show_rownames = FALSE,
+                     cluster_rows = FALSE,
+                     breaks = c(seq(0, 0.5, by = 0.005)),
+                     # cutree_cols = 3,
+                     annotation_row = annotation_row_pheatmap %>%
+                       dplyr::select(UniqueID, Sets) %>%
+                       column_to_rownames(var = "UniqueID"),
+                     annotation_colors = annotation_colors
+  )
+```
+
+```{r Figure_04_C_variance_global_consensus_export, message=FALSE}
+ggsave("Figure_04_C_variance_global_consensus.jpeg",
+       plot = Figure_04_C_variance_global_consensus,
+       device = "jpeg",
+       path = glue::glue("{base_path}/results/Figures/jpeg/Figure_4"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Figure_04_C_variance_global_consensus.tiff",
+       plot = Figure_04_C_variance_global_consensus,
+       device = "tiff",
+       path = glue::glue("{base_path}/results/Figures/tiff/Figure_4"),
+       width = 180, units = "mm", dpi = 300)
+
+ggsave("Figure_04_C_variance_global_consensus.eps",
+       plot = Figure_04_C_variance_global_consensus,
+       device = "eps",
+       path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_4"),
+       width = 180, units = "mm", dpi = 300)
+rm(Figure_04_C_variance_global_consensus)
+```
+
+## The frequency distribution of polymorphismes for common ploymorhpisme between 3 isolates
+
+```{r}
+Table_04 %>%
+  dplyr::filter(UniqueID %in% Three_sets) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  select(Samples, UniqueID, AF, POS, VAR) %>%
+  dplyr::group_by(UniqueID) %>%
+  summarise(MEAN = mean(AF))
+  # arrange(MEAN)
+  #do(tidy(kruskal.test(x= .$AF, g = .$VAR))) %>%
+  #mutate(Difference = if_else( p.value < 0.05, "yes", "no")) %>%
+  #tidyr::replace_na(list(Difference = "no"))
+Figure_04_D_frequency_distribution_common_consensus <- Table_04 %>%
+  dplyr::filter(UniqueID %in% Three_sets) %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+  left_join(., Summary_statistique_common) %>%
+  dplyr::mutate(Delta = abs(AF - MEAN),
+                Difference = if_else(Delta <= 0.05, "no","yes")) %>%
+  select(Samples, UniqueID, AF, POS, VAR, MEAN,Delta, Difference) %>%
+  arrange(UniqueID, AF) %>%
+  mutate( Rank = rank(UniqueID, ties.method = "first")) %>%
+  group_by(VAR) %>%
+  mutate(Rank = dense_rank(UniqueID) ) %>%
+  arrange(desc(Rank)) %>%
+  mutate(Rank = as.character(Rank) ) %>%
+  ggplot(aes(x =forcats::fct_reorder(UniqueID, desc(AF)), y = AF)) +
+    # geom_boxplot() +
+  # geom_point(aes(colour=SAME_FREQ, fill = SAME_FREQ), shape = 21, colour = "black", size = 3, alpha = 0.5)+
+  geom_point(aes(colour=Difference, fill = Difference),shape = 21, colour = "black", size = 3, alpha = 0.5)+
+    labs(x = "Ranked freq",
+         y = "Variant frequency",
+         title = glue::glue("N = {Table_04 %>% dplyr::filter(UniqueID %in% Three_sets) %>% select(UniqueID) %>% distinct() %>% pull() %>% length()}")) +
+  # xlim(0, 204886) + # permet d'avoir la bonne taille du génome de OsHV1 µVar A
+  ylim(0,0.5)+
+  scale_fill_manual(values=c("white", "black")) +
+  facet_grid(VAR~.) +
+  geom_hline(yintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  geom_hline(yintercept = 0.75, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  geom_hline(yintercept = 0, size = 0.25, color = "black") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = -45, vjust = 0, hjust=0, size = 6))
+```
+
+## The frequency distribution of polymorphismes for Unique ploymorhpisme for all isolates
+
+```{r}
+library(ggridges)
+
+Fig03F_frequency_distribution_unique_Brest <- Table_04  %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, CONDITION, col="VAR",sep="_",remove = FALSE) %>%
+  dplyr::filter(UniqueID %in% unique,
+                stringr::str_detect(VAR,'Brest') ) %>%
+  ggplot(aes(x = AF, y = VAR, group = VAR)) + 
+    ggridges::geom_density_ridges(stat = "binline", binwidth = 0.05, draw_baseline = FALSE, scale = 1,
+                                  aes(fill = VAR), alpha = 0.5) +
+  geom_vline(xintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  geom_vline(xintercept = 0.75, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  # xlim(0, 1) +
+  labs(title = glue::glue("N = {Table_04 %>% dplyr::filter(UniqueID %in% unique,
+                          stringr::str_detect(ID_EXPERIMENT,'Brest') ) %>% select(UniqueID) %>% distinct() %>% pull() %>% length()} Unique in a set of Brest isolates"),
+             x = "Binned variant frequency",
+             y = "Variant count") +
+  scale_color_rickandmorty() +
+  theme_minimal()
+
+Fig03F_frequency_distribution_unique_Thau <- Table_04  %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, CONDITION, col="VAR",sep="_",remove = FALSE) %>%
+  dplyr::filter(UniqueID %in% unique,
+                stringr::str_detect(VAR,'Thau') ) %>%
+  ggplot(aes(x = AF, y = VAR, group = VAR)) + 
+    ggridges::geom_density_ridges(stat = "binline", binwidth = 0.05, draw_baseline = FALSE, scale = 1,
+                                  aes(fill = VAR), alpha = 0.5) +
+  geom_vline(xintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  geom_vline(xintercept = 0.75, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  # xlim(0, 1) +
+  labs(title = glue::glue("N = {Table_04 %>% dplyr::filter(UniqueID %in% unique,
+                          stringr::str_detect(ID_EXPERIMENT,'Thau') ) %>% select(UniqueID) %>% distinct() %>% pull() %>% length()} Unique in a set of Thau isolates"),
+             x = "Binned variant frequency",
+             y = "Variant count") +
+  scale_color_rickandmorty() +
+  theme_minimal()
+
+Fig03F_frequency_distribution_unique_LT <- Table_04  %>%
+  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+  tidyr::unite(LOCATION, YEARS, CONDITION, col="VAR",sep="_",remove = FALSE) %>%
+  dplyr::filter(UniqueID %in% unique,
+                stringr::str_detect(VAR,'LT') ) %>%
+  ggplot(aes(x = AF, y = VAR, group = VAR)) + 
+    ggridges::geom_density_ridges(stat = "binline", binwidth = 0.05, draw_baseline = FALSE, scale = 1,
+                                  aes(fill = VAR), alpha = 0.5) +
+  geom_vline(xintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  geom_vline(xintercept = 0.75, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  # xlim(0, 1) +
+  labs(title = glue::glue("N = {Table_04 %>% dplyr::filter(UniqueID %in% unique,
+                          stringr::str_detect(ID_EXPERIMENT,'LT') ) %>% select(UniqueID) %>% distinct() %>% pull() %>% length()} Unique in a set of LT isolates"),
+             x = "Binned variant frequency",
+             y = "Variant count") +
+  scale_color_rickandmorty() +
+  theme_minimal()
+
+Fig03F_frequency_distribution_unique <- plot_grid(Fig03F_frequency_distribution_unique_Brest,
+                                                  Fig03F_frequency_distribution_unique_Thau,
+                                                  Fig03F_frequency_distribution_unique_LT,
+                                                  labels = c('', '',''),
+                                                  ncol = 1)
+Fig03F_frequency_distribution_unique
+```
+
+```{r}
+N_Brest=5
+N_LT=7
+N_Thau=9
+Table_05 <- Table_04 %>%
+ dplyr::select(UniqueID,
+               ID_EXPERIMENT,
+               AF) %>%
+ # dplyr::mutate(AF = dplyr::case_when(AF >=0.05 ~ 1,
+ #                                     TRUE ~ 0)) %>%
+ tidyr::pivot_wider(names_from = ID_EXPERIMENT,
+                    values_from = AF,
+                    values_fill = list(AF = 0)) %>%
+ as.data.frame() %>%
+  select(UniqueID,
+         Brest_2018_NSI_broyage_ind10_noPCR,
+         Brest_2018_NSI_broyage_ind2_noPCR,
+         Brest_2018_NSI_broyage_ind4_noPCR,
+         Brest_2018_NSI_broyage_ind6_noPCR,
+         Brest_2018_NSI_broyage_ind9_noPCR,
+         LT_2018_NSI_broyage_ind10_noPCR,
+         LT_2018_NSI_broyage_ind1_noPCR,
+         LT_2018_NSI_broyage_ind3_noPCR,
+         LT_2018_NSI_broyage_ind4_noPCR,
+         LT_2018_NSI_broyage_ind7_noPCR,
+         LT_2018_NSI_broyage_ind8_noPCR,
+         LT_2018_NSI_broyage_ind9_noPCR,
+         Thau_2018_NSI_broyage_ind10_noPCR,
+         Thau_2018_NSI_broyage_ind1_noPCR,
+         Thau_2018_NSI_broyage_ind3_noPCR,
+         Thau_2018_NSI_broyage_ind4_noPCR,
+         Thau_2018_NSI_broyage_ind5_noPCR,
+         Thau_2018_NSI_broyage_ind6_noPCR,
+         Thau_2018_NSI_broyage_ind7_noPCR,
+         Thau_2018_NSI_broyage_ind8_noPCR,
+         Thau_2018_NSI_broyage_ind9_noPCR) %>%
+  tibble::column_to_rownames("UniqueID")
+
+VC_table <- Table_06 %>%
+  dplyr::mutate(Sets =
+                  case_when(
+                    Brest_2018  == 1 & Brest_2018 < N_Brest & Thau_2018 == 0 & LT_2018 == 0 ~ "Br-sing", 
+                    Brest_2018  > 1 & Brest_2018 < N_Brest & Thau_2018 == 0 & LT_2018 == 0 ~ "Br", 
+                    Brest_2018  == N_Brest & Thau_2018 == 0 & LT_2018 == 0 ~ "Br_full",
+                    Brest_2018  == 0 & Thau_2018 == 1 & Thau_2018 < N_Thau & LT_2018 == 0 ~ "Th-sing",
+                    Brest_2018  == 0 & Thau_2018 > 1 & Thau_2018 < N_Thau & LT_2018 == 0 ~ "Th",
+                    Brest_2018  == 0 & Thau_2018 == N_Thau & LT_2018 == 0 ~ "Th_full",
+                    Brest_2018  == 0 & Thau_2018 == 0 & LT_2018 == 1  & LT_2018 < N_LT~ "Lt-sing",
+                    Brest_2018  == 0 & Thau_2018 == 0 & LT_2018 > 1  & LT_2018 < N_LT~ "Lt",
+                    Brest_2018  == 0 & Thau_2018 == 0 & LT_2018 == N_LT ~ "Lt_full",
+                    Brest_2018  >= 1  & Thau_2018 >= 1 &  LT_2018 >=1 ~ "Common",
+                    Brest_2018  == N_Brest  & Thau_2018 == N_Thau &  LT_2018 == N_LT ~ "full",
+                    Brest_2018  >= 1  & Thau_2018 >= 1 & LT_2018 == 0 ~ "Br Th",
+                    Brest_2018  >= 1  & Thau_2018 == 0 & LT_2018 >= 1 ~ "Br Lt",
+                    Brest_2018  == 0  & Thau_2018 >= 1 & LT_2018 >= 1 ~ "Lt Th")
+                ) %>%
+  dplyr::mutate(DATASET = "VC")
+```
+
+### Allelic frequency of each sets
+
+```{r}
+# Allelic frequency common
+VC_table %>% 
+  select(UniqueID, Sets) %>%
+  filter(Sets == "Common") %>%
+  left_join(., Table_04) %>%
+  left_join(., plot_order_samples %>% select(ID_EXPERIMENT,LOCATION)) %>%
+  group_by(LOCATION) %>%
+  summarise(mean = mean(AF)*100,
+            sd = sd(AF)*100)
+# Within area
+VC_table %>% 
+  select(UniqueID, Sets) %>%
+  filter(Sets == "Br-sing" | Sets == "Br" | Sets == "Br_full" )  %>%
+  left_join(., Table_04) %>%
+  left_join(., plot_order_samples %>% select(ID_EXPERIMENT,LOCATION)) %>%
+  group_by(LOCATION) %>%
+  summarise(mean = mean(AF)*100,
+            sd = sd(AF)*100,
+            N=n()) # car il y en a 1 dupliqué c'est normal
+VC_table %>% 
+  select(UniqueID, Sets) %>%
+  filter(Sets == "Lt-sing" | Sets == "Lt" | Sets == "Lt_full" )  %>%
+  left_join(., Table_04) %>%
+  left_join(., plot_order_samples %>% select(ID_EXPERIMENT,LOCATION)) %>%
+  group_by(LOCATION) %>%
+  summarise(mean = mean(AF)*100,
+            sd = sd(AF)*100,
+            N=n())
+VC_table %>% 
+  select(UniqueID, Sets) %>%
+  filter(Sets == "Th-sing" | Sets == "Th" | Sets == "Th_full" )  %>%
+  left_join(., Table_04) %>%
+  left_join(., plot_order_samples %>% select(ID_EXPERIMENT,LOCATION)) %>%
+  group_by(LOCATION) %>%
+  summarise(mean = mean(AF)*100,
+            sd = sd(AF)*100,
+            N=n())
+
+# Within singleton
+VC_table %>% 
+  select(UniqueID, Sets) %>%
+  filter(Sets == "Br-sing") %>%
+  left_join(., Table_04) %>%
+  left_join(., plot_order_samples %>% select(ID_EXPERIMENT,LOCATION)) %>%
+  group_by(LOCATION) %>%
+  summarise(mean = mean(AF)*100,
+            sd = sd(AF)*100,
+            N=n())
+
+VC_table %>% 
+  select(UniqueID, Sets) %>%
+  filter(Sets == "Lt-sing") %>%
+  left_join(., Table_04) %>%
+  left_join(., plot_order_samples %>% select(ID_EXPERIMENT,LOCATION)) %>%
+  group_by(LOCATION) %>%
+  summarise(mean = mean(AF)*100,
+            sd = sd(AF)*100,
+            N=n())
+
+VC_table %>% 
+  select(UniqueID, Sets) %>%
+  filter(Sets == "Th-sing") %>%
+  left_join(., Table_04) %>%
+  left_join(., plot_order_samples %>% select(ID_EXPERIMENT,LOCATION)) %>%
+  group_by(LOCATION) %>%
+  summarise(mean = mean(AF)*100,
+            sd = sd(AF)*100,
+            N=n())
+```
+
+```{r Figure_04_C_location_variation}
+Consensus_size = 186356
+Figure_04_C_location_variation_p1 <-Table_05_binary_matrix %>%
+  as.data.frame() %>%
+  rownames_to_column("UniqueID") %>%
+  pivot_longer(-UniqueID) %>%
+  tidyr::separate(UniqueID, c("POS","MODIFICATION"), sep = "_", remove = FALSE) %>%
+  dplyr::mutate(POS = as.numeric(POS)) %>%
+  dplyr::filter(value != 0) %>%
+  tidyr::separate(name, c("LOCATION","YEARS","NSI","BROYAGE", "IND","PCR"), sep = "_", remove = TRUE) %>%
+  dplyr::select(-YEARS, -NSI, -BROYAGE, -PCR) %>%
+  unite(LOCATION, IND, col="Samples", remove=FALSE) %>%
+  left_join(.,VC_table) %>%
+  left_join(., plot_order_samples) %>%
+  dplyr::mutate(Specificite = 
+                  case_when(
+                    stringr::str_detect(Sets,"_full") ~ "Specific",
+                    stringr::str_detect(Sets," ") ~ "Shared",
+                    stringr::str_detect(Sets,"Common") ~ "Common",
+                    TRUE ~ "normal"
+                    ),
+                Samples = stringr::str_replace_all(Samples, "Brest","Br"),
+                Samples = stringr::str_replace_all(Samples, "Thau","Th")) %>%
+ggplot(aes(x = POS, y =  forcats::fct_reorder2(Samples, ORDER_samples, ORDER), fill = LOCATION )) +
+  geom_point(aes(color = LOCATION, shape= Specificite))+
+    xlim(0, Consensus_size) +
+  theme_minimal()+
+  geom_vline(xintercept = Consensus_size, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+  geom_vline(xintercept = 0, size = 0.25, color = "black") +
+  # geom_hline(yintercept = 0, size = 1, color = "black") +
+    # facet_grid(Samples~.) +
+  theme(axis.line = element_line(size = 0.5, colour = "black")) +
+    scale_color_manual(values=list(Brest = Brest_color, 
+                                LT = LT_color,
+                                Thau = Thau_color)) +
+  scale_shape_manual(values=c(2, 1,4,3))
+```
+
+```{r}
+sessionInfo()
+```

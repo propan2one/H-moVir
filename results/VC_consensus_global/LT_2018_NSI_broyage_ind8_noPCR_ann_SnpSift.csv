@@ -1,0 +1,232 @@
+CHROM	POS	REF	ALT	ANN[1].IMPACT:	ANN[1].EFFECT	ANN[1].HGVS_P	ANN[1].HGVS_C	ANN[1].CDNA_POS	ANN[1].CDNA_LEN	ANN[1].AA_POS	ANN[1].AA_LEN	ANN[1].DISTANCE	ANN[1].GENEID	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	1	G	ATCATTACACATCTCGTGCAG	MODIFIER	downstream_gene_variant		c.*4944_*4945insTGCACGAGATGTGTAATGAT	-1	-1	-1	-1	4944	GENE_ORFi_00002	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	1	G	CACATCTCGTGCAG	MODIFIER	downstream_gene_variant		c.*4944_*4945insTGCACGAGATGTG	-1	-1	-1	-1	4944	GENE_ORFi_00002	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	1	G	TACACATCTCGTGCAG	MODIFIER	downstream_gene_variant		c.*4944_*4945insTGCACGAGATGTGTA	-1	-1	-1	-1	4944	GENE_ORFi_00002	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	1	G	AAATCATTACACATCTCGTGCAG	MODIFIER	downstream_gene_variant		c.*4944_*4945insTGCACGAGATGTGTAATGATTT	-1	-1	-1	-1	4944	GENE_ORFi_00002	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	8	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	2982	G	A	MODIFIER	downstream_gene_variant		c.*1963C>T	-1	-1	-1	-1	1963	GENE_ORFi_00002	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	2983	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	3531	C	T	MODIFIER	upstream_gene_variant		c.-4499C>T	-1	-1	-1	-1	4499	GENE_ORFi_00004	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	3532	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	4927	AT	A	MODIFIER	upstream_gene_variant		c.-4395delT	-1	-1	-1	-1	4395	GENE_ORFi_00005	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	4940	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	7206	C	T	MODIFIER	upstream_gene_variant		c.-1302G>A	-1	-1	-1	-1	1302	GENE_ORFi_00002	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	7207	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	7556	G	C	MODIFIER	upstream_gene_variant		c.-1652C>G	-1	-1	-1	-1	1652	GENE_ORFi_00002	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	7557	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	10253	A	C	MODIFIER	upstream_gene_variant		c.-4349T>G	-1	-1	-1	-1	4349	GENE_ORFi_00002	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	10254	G	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	11323	A	T	MODIFIER	upstream_gene_variant		c.-7A>T	-1	-1	-1	-1	7	GENE_ORFi_00006	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	11324	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	12759	T	C	MODIFIER	upstream_gene_variant		c.-477A>G	-1	-1	-1	-1	477	GENE_ORFi_00007	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	12760	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	13034	T	G	MODIFIER	upstream_gene_variant		c.-752A>C	-1	-1	-1	-1	752	GENE_ORFi_00007	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	13035	A	G	MODIFIER	upstream_gene_variant		c.-753T>C	-1	-1	-1	-1	753	GENE_ORFi_00007	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	13036	G	A	MODIFIER	upstream_gene_variant		c.-754C>T	-1	-1	-1	-1	754	GENE_ORFi_00007	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	13037	G	A	MODIFIER	upstream_gene_variant		c.-755C>T	-1	-1	-1	-1	755	GENE_ORFi_00007	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	13038	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	14459	N	T	MODIFIER	upstream_gene_variant		c.-2177G>A	-1	-1	-1	-1	2177	GENE_ORFi_00007	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	14460	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	14680	C	T	MODERATE	missense_variant	p.Asp145Asn	c.433G>A	433	462	145	153	0	GENE_ORFi_00011	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	14681	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	14822	G	A	MODIFIER	upstream_gene_variant		c.-2540C>T	-1	-1	-1	-1	2540	GENE_ORFi_00007	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	14823	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	15593	N	T	MODIFIER	upstream_gene_variant		c.-3311G>A	-1	-1	-1	-1	3311	GENE_ORFi_00007	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	15594	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	23395	G	A	MODIFIER	upstream_gene_variant		c.-4767C>T	-1	-1	-1	-1	4767	GENE_ORFi_00014	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	23396	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	23600	G	A	MODIFIER	upstream_gene_variant		c.-4972C>T	-1	-1	-1	-1	4972	GENE_ORFi_00014	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	23601	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	23989	A	C	MODIFIER	upstream_gene_variant		c.-2336T>G	-1	-1	-1	-1	2336	GENE_ORFi_00015	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	23990	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	24775	G	A	MODIFIER	upstream_gene_variant		c.-3122C>T	-1	-1	-1	-1	3122	GENE_ORFi_00015	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	24776	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	25300	G	A	MODIFIER	upstream_gene_variant		c.-3647C>T	-1	-1	-1	-1	3647	GENE_ORFi_00015	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	25301	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	26596	G	A	MODIFIER	upstream_gene_variant		c.-4943C>T	-1	-1	-1	-1	4943	GENE_ORFi_00015	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	26597	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	26624	C	T	MODIFIER	upstream_gene_variant		c.-4971G>A	-1	-1	-1	-1	4971	GENE_ORFi_00015	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	26625	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	26763	CN	C	MODIFIER	downstream_gene_variant		c.*48delC	-1	-1	-1	-1	48	GENE_ORFi_00016	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	26763	CN	CA	MODIFIER	downstream_gene_variant		c.*48G>A	-1	-1	-1	-1	48	GENE_ORFi_00016	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	26763	CN	CC	MODIFIER	downstream_gene_variant		c.*48G>C	-1	-1	-1	-1	48	GENE_ORFi_00016	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	26784	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	29176	C	T	MODIFIER	upstream_gene_variant		c.-3522C>T	-1	-1	-1	-1	3522	GENE_ORFi_00020	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	29177	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	29520	C	A	MODIFIER	upstream_gene_variant		c.-3178C>A	-1	-1	-1	-1	3178	GENE_ORFi_00020	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	29521	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	30034	G	A	MODIFIER	upstream_gene_variant		c.-2664G>A	-1	-1	-1	-1	2664	GENE_ORFi_00020	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	30035	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	34017	C	A	MODIFIER	upstream_gene_variant		c.-3351G>T	-1	-1	-1	-1	3351	GENE_ORFi_00017	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	34018	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	39114	T	G	MODIFIER	upstream_gene_variant		c.-4325A>C	-1	-1	-1	-1	4325	GENE_ORFi_00021	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	39115	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	40631	A	G	MODIFIER	upstream_gene_variant		c.-3517T>C	-1	-1	-1	-1	3517	GENE_ORFi_00022	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	40632	G	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	40720	T	G	MODIFIER	upstream_gene_variant		c.-3606A>C	-1	-1	-1	-1	3606	GENE_ORFi_00022	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	40721	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	40726	G	A	MODIFIER	upstream_gene_variant		c.-3612C>T	-1	-1	-1	-1	3612	GENE_ORFi_00022	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	40727	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	41913	C	T	MODIFIER	upstream_gene_variant		c.-4183G>A	-1	-1	-1	-1	4183	GENE_ORFi_00023	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	41914	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	44084	N	T	MODIFIER	upstream_gene_variant		c.-4894G>A	-1	-1	-1	-1	4894	GENE_ORFi_00025	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	44085	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	46579	N	C	MODIFIER	upstream_gene_variant		c.-4790C>G	-1	-1	-1	-1	4790	GENE_ORFi_00029	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	46580	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	46597	T	G	MODIFIER	upstream_gene_variant		c.-4052A>C	-1	-1	-1	-1	4052	GENE_ORFi_00030	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	46598	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	47263	A	C	MODIFIER	upstream_gene_variant		c.-4718T>G	-1	-1	-1	-1	4718	GENE_ORFi_00030	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	47264	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	48749	G	A	MODIFIER	upstream_gene_variant		c.-4697C>T	-1	-1	-1	-1	4697	GENE_ORFi_00033	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	48750	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	50642	C	T	MODIFIER	upstream_gene_variant		c.-4138G>A	-1	-1	-1	-1	4138	GENE_ORFi_00035	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	50643	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	53601	NNNG	TGAG	HIGH	stop_gained	p.???47*	c.139_141delAACinsTGA	139	870	47	289	0	GENE_ORFi_00041	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	53601	NNNG	TTTG	MODERATE	missense_variant	p.???47Phe	c.139_141delAACinsTTT	139	870	47	289	0	GENE_ORFi_00041	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	53601	NNNG	GTGA	MODERATE	missense_variant	p.???Val47ValMet	c.139_142delAACGinsGTGA	139	870	47	289	0	GENE_ORFi_00041	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	53605	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	54298	NNN	CCC	MODERATE	missense_variant	p.??????279ThrPro	c.836_838delAACinsCCC	836	870	279	289	0	GENE_ORFi_00041	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	54298	NNN	TGA	MODERATE	missense_variant	p.??????279MetThr	c.836_838delAACinsTGA	836	870	279	289	0	GENE_ORFi_00041	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	54301	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	54461	GN	G	MODIFIER	upstream_gene_variant		c.-3752delG	-1	-1	-1	-1	3752	GENE_ORFi_00037	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	54461	GN	GG	MODIFIER	upstream_gene_variant		c.-3752G>C	-1	-1	-1	-1	3752	GENE_ORFi_00037	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	54477	G	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	54912	T	C	MODIFIER	upstream_gene_variant		c.-4202A>G	-1	-1	-1	-1	4202	GENE_ORFi_00037	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	54913	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	58433	T	A	MODIFIER	upstream_gene_variant		c.-3038A>T	-1	-1	-1	-1	3038	GENE_ORFi_00042	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	58434	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	58559	A	G	MODIFIER	upstream_gene_variant		c.-3164T>C	-1	-1	-1	-1	3164	GENE_ORFi_00042	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	58560	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	59424	G	A	MODIFIER	upstream_gene_variant		c.-4029C>T	-1	-1	-1	-1	4029	GENE_ORFi_00042	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	59425	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	61508	N	T	MODIFIER	upstream_gene_variant		c.-12C>T	-1	-1	-1	-1	12	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	61509	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	62551	G	A	MODIFIER	downstream_gene_variant		c.*1238G>A	-1	-1	-1	-1	1238	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	62552	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	62912	G	A	MODIFIER	downstream_gene_variant		c.*1599G>A	-1	-1	-1	-1	1599	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	62913	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	64982	NTTTTTTG	TTTTTTG	MODIFIER	downstream_gene_variant		c.*3669delC	-1	-1	-1	-1	3669	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	64982	NTTTTTTG	TTTTTTT	MODIFIER	downstream_gene_variant		c.*3669_*3676delCTTTTTTGinsTTTTTTT	-1	-1	-1	-1	3669	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	64982	NTTTTTTG	ATTTTTTG	MODIFIER	downstream_gene_variant		c.*3669G>A	-1	-1	-1	-1	3669	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	64982	NTTTTTTG	TTTTTTTG	MODIFIER	downstream_gene_variant		c.*3669C>T	-1	-1	-1	-1	3669	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	64994	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65016	T	A	MODIFIER	downstream_gene_variant		c.*80T>A	-1	-1	-1	-1	80	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65017	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65099	T	G	MODIFIER	downstream_gene_variant		c.*163T>G	-1	-1	-1	-1	163	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65100	C	G	MODIFIER	downstream_gene_variant		c.*164C>G	-1	-1	-1	-1	164	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65101	T	G	MODIFIER	downstream_gene_variant		c.*165T>G	-1	-1	-1	-1	165	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65102	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65302	G	A	MODIFIER	downstream_gene_variant		c.*366G>A	-1	-1	-1	-1	366	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65303	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65360	C	T	MODIFIER	downstream_gene_variant		c.*424C>T	-1	-1	-1	-1	424	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65361	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65368	N	G	MODIFIER	downstream_gene_variant		c.*4055C>G	-1	-1	-1	-1	4055	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65369	G	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65374	A	G	MODIFIER	downstream_gene_variant		c.*438A>G	-1	-1	-1	-1	438	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65375	G	A	MODIFIER	downstream_gene_variant		c.*439G>A	-1	-1	-1	-1	439	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65376	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65401	G	A	MODIFIER	downstream_gene_variant		c.*465G>A	-1	-1	-1	-1	465	GENE_ORFi_00046	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65402	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65650	N	T	MODIFIER	downstream_gene_variant		c.*4337C>T	-1	-1	-1	-1	4337	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65651	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65754	G	A	MODIFIER	downstream_gene_variant		c.*4441G>A	-1	-1	-1	-1	4441	GENE_ORFi_00045	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	65755	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	66954	GT	G	MODIFIER	upstream_gene_variant		c.-3774delT	-1	-1	-1	-1	3774	GENE_ORFi_00050	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	66962	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	67225	T	C	MODIFIER	upstream_gene_variant		c.-3504T>C	-1	-1	-1	-1	3504	GENE_ORFi_00050	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	67226	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	68258	G	A	MODIFIER	upstream_gene_variant		c.-704C>T	-1	-1	-1	-1	704	GENE_ORFi_00047	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	68259	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	69761	T	C	MODIFIER	upstream_gene_variant		c.-2207A>G	-1	-1	-1	-1	2207	GENE_ORFi_00047	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	69762	G	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	70576	A	C	MODIFIER	upstream_gene_variant		c.-3022T>G	-1	-1	-1	-1	3022	GENE_ORFi_00047	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	70577	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	71451	G	A	MODIFIER	upstream_gene_variant		c.-3897C>T	-1	-1	-1	-1	3897	GENE_ORFi_00047	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	71452	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	72608	G	A	MODIFIER	upstream_gene_variant		c.-4588C>T	-1	-1	-1	-1	4588	GENE_ORFi_00048	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	72609	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	75434	CN	C	MODIFIER	upstream_gene_variant		c.-4835delG	-1	-1	-1	-1	4835	GENE_ORFi_00049	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	75434	CN	CA	MODIFIER	upstream_gene_variant		c.-4835C>T	-1	-1	-1	-1	4835	GENE_ORFi_00049	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	75434	CN	CC	MODIFIER	upstream_gene_variant		c.-4835C>G	-1	-1	-1	-1	4835	GENE_ORFi_00049	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	75448	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	78222	G	A	MODIFIER	upstream_gene_variant		c.-2342C>T	-1	-1	-1	-1	2342	GENE_ORFi_00053	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	78223	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	86336	G	A	MODIFIER	upstream_gene_variant		c.-2400C>T	-1	-1	-1	-1	2400	GENE_ORFi_00058	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	86337	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	88940	C	T	MODIFIER	upstream_gene_variant		c.-51G>A	-1	-1	-1	-1	51	GENE_ORFi_00061	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	88941	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	92906	C	T	MODIFIER	upstream_gene_variant		c.-4017G>A	-1	-1	-1	-1	4017	GENE_ORFi_00061	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	92907	G	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	95225	CN	C	MODIFIER	upstream_gene_variant		c.-2221delG	-1	-1	-1	-1	2221	GENE_ORFi_00063	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	95225	CN	CA	MODIFIER	upstream_gene_variant		c.-2221C>T	-1	-1	-1	-1	2221	GENE_ORFi_00063	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	95225	CN	CC	MODIFIER	upstream_gene_variant		c.-2221C>G	-1	-1	-1	-1	2221	GENE_ORFi_00063	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	95225	CN	CT	MODIFIER	upstream_gene_variant		c.-2221G>A	-1	-1	-1	-1	2221	GENE_ORFi_00063	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	95235	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	96947	C	A	MODIFIER	upstream_gene_variant		c.-3942G>T	-1	-1	-1	-1	3942	GENE_ORFi_00063	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	96948	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	96950	G	T	MODIFIER	upstream_gene_variant		c.-3945C>A	-1	-1	-1	-1	3945	GENE_ORFi_00063	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	96951	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	96958	C	A	MODIFIER	upstream_gene_variant		c.-3953G>T	-1	-1	-1	-1	3953	GENE_ORFi_00063	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	96959	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	96982	T	G	MODIFIER	upstream_gene_variant		c.-3977A>C	-1	-1	-1	-1	3977	GENE_ORFi_00063	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	96983	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	106579	A	C	MODIFIER	upstream_gene_variant		c.-2197T>G	-1	-1	-1	-1	2197	GENE_ORFi_00074	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	106580	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	115911	N	T	MODIFIER	upstream_gene_variant		c.-44C>T	-1	-1	-1	-1	44	GENE_ORFi_00080	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	115912	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	116378	NN	TA	MODIFIER	upstream_gene_variant		c.-55_-54delACinsTA	-1	-1	-1	-1	55	GENE_ORFi_00081	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	116378	NN	TG	MODIFIER	upstream_gene_variant		c.-55_-54delACinsTG	-1	-1	-1	-1	55	GENE_ORFi_00081	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	116380	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	117756	G	A	MODIFIER	upstream_gene_variant		c.-1724G>A	-1	-1	-1	-1	1724	GENE_ORFi_00085	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	117757	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	123167	A	C	MODIFIER	upstream_gene_variant		c.-4105T>G	-1	-1	-1	-1	4105	GENE_ORFi_00083	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	123168	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	125010	G	A	MODIFIER	upstream_gene_variant		c.-4573G>A	-1	-1	-1	-1	4573	GENE_ORFi_00094	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	125011	G	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	132295	C	T	MODIFIER	upstream_gene_variant		c.-4605G>A	-1	-1	-1	-1	4605	GENE_ORFi_00091	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	132296	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	133391	NTTTTC	TTTTC	MODIFIER	upstream_gene_variant		c.-4975delG	-1	-1	-1	-1	4975	GENE_ORFi_00092	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	133391	NTTTTC	TTTTT	MODIFIER	upstream_gene_variant		c.-4980_-4975delGAAAAGinsAAAAA	-1	-1	-1	-1	4975	GENE_ORFi_00092	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	133391	NTTTTC	ATTTTC	MODIFIER	upstream_gene_variant		c.-4975C>T	-1	-1	-1	-1	4975	GENE_ORFi_00092	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	133398	G	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	136430	G	A	MODIFIER	upstream_gene_variant		c.-4000C>T	-1	-1	-1	-1	4000	GENE_ORFi_00096	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	136431	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	136601	G	A	MODIFIER	upstream_gene_variant		c.-3545C>T	-1	-1	-1	-1	3545	GENE_ORFi_00097	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	136602	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	138417	G	A	MODIFIER	upstream_gene_variant		c.-1980C>T	-1	-1	-1	-1	1980	GENE_ORFi_00099	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	138418	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	141388	A	T	MODIFIER	upstream_gene_variant		c.-4951T>A	-1	-1	-1	-1	4951	GENE_ORFi_00099	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	141389	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	142748	A	G	MODIFIER	upstream_gene_variant		c.-2874A>G	-1	-1	-1	-1	2874	GENE_ORFi_00103	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	142749	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	146891	TN	T	HIGH	frameshift_variant	p.???424fs	c.1271delC	1271	1362	424	453	0	GENE_ORFi_00103	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	146891	TN	TA	HIGH	stop_gained	p.???424*	c.1271G>A	1271	1362	424	453	0	GENE_ORFi_00103	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	146891	TN	TT	MODERATE	missense_variant	p.???424Leu	c.1271C>T	1271	1362	424	453	0	GENE_ORFi_00103	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	146908	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	147905	A	C	MODIFIER	upstream_gene_variant		c.-2296T>G	-1	-1	-1	-1	2296	GENE_ORFi_00102	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	147906	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	150729	N	A	MODERATE	missense_variant	p.???19Lys	c.56G>A	56	114	19	37	0	GENE_ORFi_00105	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	150730	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	152783	NNN	TCA	MODERATE	missense_variant	p.??????386ValMet	c.1157_1159delGTTinsTGA	1159	1398	386	465	0	GENE_ORFi_00111	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	152783	NNN	CTC	MODERATE	missense_variant	p.??????386GlyVal	c.1157_1159delGTTinsGAG	1159	1398	386	465	0	GENE_ORFi_00111	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	152786	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	153951	AT	A	MODIFIER	upstream_gene_variant		c.-2436delA	-1	-1	-1	-1	2436	GENE_ORFi_00107	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	153962	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	164290	A	T	MODIFIER	upstream_gene_variant		c.-9A>T	-1	-1	-1	-1	9	GENE_ORFi_00119	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	164291	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	164295	ACATA	GTGGTAAGAC	MODIFIER	upstream_gene_variant		c.-2621_-2617delTATGTinsGTCTTACCAC	-1	-1	-1	-1	2617	GENE_ORFi_00116	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	164300	T	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168186	AN	A	MODIFIER	upstream_gene_variant		c.-2295delC	-1	-1	-1	-1	2295	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168186	AN	AA	MODIFIER	upstream_gene_variant		c.-2295G>A	-1	-1	-1	-1	2295	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168186	AN	AT	MODIFIER	upstream_gene_variant		c.-2295C>T	-1	-1	-1	-1	2295	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168199	A	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168264	NAAAAAAC	AAAAAAC	MODIFIER	upstream_gene_variant		c.-2218delC	-1	-1	-1	-1	2218	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168264	NAAAAAAC	AAAAAAA	MODIFIER	upstream_gene_variant		c.-2218_-2211delCAAAAAACinsAAAAAAA	-1	-1	-1	-1	2218	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168264	NAAAAAAC	AAAAAAAC	MODIFIER	upstream_gene_variant		c.-2218G>A	-1	-1	-1	-1	2218	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168264	NAAAAAAC	CAAAAAAC	MODIFIER	upstream_gene_variant		c.-2218G>C	-1	-1	-1	-1	2218	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168284	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168552	N	C	MODIFIER	upstream_gene_variant		c.-1930G>C	-1	-1	-1	-1	1930	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168553	N	C	MODIFIER	upstream_gene_variant		c.-1929G>C	-1	-1	-1	-1	1929	GENE_ORFi_00125	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168554	C	<*>	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168626	AGCATG	A	MODIFIER	upstream_gene_variant		c.-2001_-1997delGCATG	-1	-1	-1	-1	2001	GENE_ORFi_00126	LT_2018_NSI_broyage_ind8_noPCR
+Hemovir_consensus_21_samples	168626	AGCATG	AAGCATG	MODIFIER	upstream_gene_variant		c.-2002_-2001insA	-1	-1	-1	-1	2001	GENE_ORFi_00126	LT_2018_NSI_broyage_ind8_noPCR
