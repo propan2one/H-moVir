@@ -32,7 +32,7 @@ ipak(unique(
 ```
 
 ```{r Base_Path}
-base_path <- "~/Documents/Hemovir" # Base location for the folder
+base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
 ```
 
 # Preparation and import of data
