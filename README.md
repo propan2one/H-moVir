@@ -22,7 +22,7 @@ The virus genomes used in the study were downloaded directly from NCBI as follow
 
 | Genome                                                                                                             |  Id accession |
 |--------------------------------------------------------------------------------------------------------------------|---------------|
-| ![Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KY242785.1/) |    KY242785.1 |
+| [Ostreid_herpesvirus_1_strain_microVar_variant_A_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KY242785.1/) |    KY242785.1 |
 | [Ostreid_herpesvirus_1_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/AY509253.2/)                           |  AY509253.2   |
 | [Ostreid_herpesvirus_1_strain_microVar_variant_B_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/KY271630.1/) |    KY271630.1 |
 | [Ostreid_herpesvirus_1_isolate_ZK0118_complete_genome](https//www.ncbi.nlm.nih.gov/nuccore/MF509813.1/)            |   MF509813.1  |
@@ -73,7 +73,7 @@ Note: Login and passwords are missing in the code. The paths used in the code ha
 
 ___
 
-### 01) Data transfer
+### 01) Data transfert
 
 All data has been transferred and MD5 have been check from the servers of the transfer platform to the datarmor calculation server with : [01-data_transfer.pbs](https://github.com/propan2one/OshV-1-molepidemio/blob/main/src/01-data_transfer.pbs)
 
