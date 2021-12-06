@@ -1,0 +1,27 @@
+/home/propan2one/Project/OshV-1-molepidemio/results/C-NR-genome.fasta /home/propan2one/Project/OshV-1-molepidemio/results/oshv.fna
+NUCMER
+
+    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  |  [LEN R]  [LEN Q]  |  [COV R]  [COV Q]  | [TAGS]
+===============================================================================================================================
+       1   186356  |        1   186279  |   186356   186279  |    99.91  |   186356   186279  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Brest_2018_NSI_broyage_ind10_noPCR
+       1   186356  |        1   186286  |   186356   186286  |    99.92  |   186356   186286  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Brest_2018_NSI_broyage_ind2_noPCR
+       1   186356  |        1   186283  |   186356   186283  |    99.92  |   186356   186283  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Brest_2018_NSI_broyage_ind4_noPCR
+       1   186356  |        1   186279  |   186356   186279  |    99.91  |   186356   186279  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Brest_2018_NSI_broyage_ind6_noPCR
+       1   186356  |        1   186280  |   186356   186280  |    99.91  |   186356   186280  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Brest_2018_NSI_broyage_ind9_noPCR
+       1   186356  |        1   186278  |   186356   186278  |    99.90  |   186356   186278  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_LT_2018_NSI_broyage_ind10_noPCR
+       1   186356  |        1   186292  |   186356   186292  |    99.93  |   186356   186292  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_LT_2018_NSI_broyage_ind1_noPCR
+       1   186356  |        1   186277  |   186356   186277  |    99.93  |   186356   186277  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_LT_2018_NSI_broyage_ind3_noPCR
+       1   186356  |        1   186293  |   186356   186293  |    99.92  |   186356   186293  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_LT_2018_NSI_broyage_ind4_noPCR
+       1   186356  |        1   186285  |   186356   186285  |    99.93  |   186356   186285  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_LT_2018_NSI_broyage_ind7_noPCR
+       1   186356  |        1   186287  |   186356   186287  |    99.93  |   186356   186287  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_LT_2018_NSI_broyage_ind8_noPCR
+       1   186356  |        1   186285  |   186356   186285  |    99.93  |   186356   186285  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_LT_2018_NSI_broyage_ind9_noPCR
+       1   186356  |        1   186276  |   186356   186276  |    99.93  |   186356   186276  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind10_noPCR
+       1   186356  |        1   186272  |   186356   186272  |    99.93  |   186356   186272  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind1_noPCR
+       1   186356  |        1   186284  |   186356   186284  |    99.94  |   186356   186284  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind3_noPCR
+       1   186356  |        1   186269  |   186356   186269  |    99.93  |   186356   186269  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind4_noPCR
+       1   186356  |        1   186268  |   186356   186268  |    99.93  |   186356   186268  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind5_noPCR
+       1   186356  |        1   186274  |   186356   186274  |    99.93  |   186356   186274  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind6_noPCR
+       1   186356  |        1   186275  |   186356   186275  |    99.93  |   186356   186275  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind7_noPCR
+       1   186356  |        1   186265  |   186356   186265  |    99.93  |   186356   186265  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind8_noPCR
+       1   186356  |        1   186273  |   186356   186273  |    99.93  |   186356   186273  |   100.00   100.00  | C-NR-genome.fasta	NR_genome_Thau_2018_NSI_broyage_ind9_noPCR
+  158643   186356  |   158627   186293  |    27714    27667  |    99.78  |   186356   186293  |    14.87    14.85  | C-NR-genome.fasta	NR_genome_LT_2018_NSI_broyage_ind4_noPCR
