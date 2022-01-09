@@ -25,7 +25,7 @@ ipak <- function(pkg){
 }
 
 ipak(unique(
-  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly",  "taxize", "ggtree", "tidytree", "broom",
+  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly", "tidytree", "broom",
     "hrbrthemes", "viridis", "ggsci", # palette
     "cowplot", "scales", "maptools", "gggenes") # plot
   ) )
@@ -33,6 +33,7 @@ ipak(unique(
 
 ```{r Base_Path}
 base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
+base_path <- "/home/propan2one/Project/OshV-1-molepidemio"
 ```
 
 # Preparation and import of data
@@ -96,6 +97,15 @@ comparative_genomic <- data.table::fread(glue::glue("{base_path}/results/Tables/
          fill=TRUE,
          quote=FALSE)
 colnames(comparative_genomic) <-c("POS", "REF", "ALT","POS_ALT", "BUFF","DIST","R", "Q", "FRM","TAGS", "gREF","ID_EXPERIMENT")
+
+comparative_genomic <- comparative_genomic %>%
+dplyr::mutate(UniqueID= glue::glue("{POS}_{REF}>{ALT}")) %>%
+    as_tibble() %>%
+  group_by(UniqueID, ALT, ID_EXPERIMENT) %>%
+  mutate(ALT = paste(ALT, collapse = "")) %>%
+  data.frame() %>%
+  select(-POS_ALT, -UniqueID, -DIST) %>%
+  distinct() 
 ```
 
 
@@ -108,17 +118,20 @@ CG_POS <- comparative_genomic %>%
   distinct() %>%
   pull()
 
+
 # In the select, we don't used a regex like `contain()` because we want to be sure of the order
 Table_02_binary_matrix <- comparative_genomic %>%
   dplyr::mutate(UniqueID= glue::glue("{POS}_{REF}>{ALT}"),
                 AF = 1) %>%
+  data.frame() %>%
   dplyr::select(UniqueID,
                 ID_EXPERIMENT,
                 AF) %>%
+  distinct() %>%
   tidyr::pivot_wider(names_from = ID_EXPERIMENT,
                      values_from = AF,
                      values_fill = list(AF = 0)) %>%
-  as.data.frame() %>%
+  as.data.frame() %>% 
   select(UniqueID,
          NR_genome_Brest_2018_NSI_broyage_ind10_noPCR,
          NR_genome_Brest_2018_NSI_broyage_ind2_noPCR,
@@ -141,7 +154,7 @@ Table_02_binary_matrix <- comparative_genomic %>%
          NR_genome_Thau_2018_NSI_broyage_ind7_noPCR,
          NR_genome_Thau_2018_NSI_broyage_ind8_noPCR,
          NR_genome_Thau_2018_NSI_broyage_ind9_noPCR) %>%
-  tibble::column_to_rownames("UniqueID")  %>%
+  tibble::column_to_rownames("UniqueID") %>%
   as.matrix()
 ```
 
@@ -172,7 +185,6 @@ Table_XXXXXXX %>%
 
 Table_XXXXXXX %>%
   tidyr::pivot_longer(-UniqueID) %>%
-  # dplyr::filter(value >= 2 ) %>% # Supprime les données présente en 1 exemplaire
   dplyr::mutate(value = dplyr::case_when(value > 0 ~ 1,
                                       TRUE ~ 0)) %>%
   dplyr::mutate(name = stringr::str_replace_all(name,"_2018",""))  %>%
@@ -180,9 +192,16 @@ Table_XXXXXXX %>%
                      values_from = value,
                      values_fill = list(value = 0)) %>%
   column_to_rownames(var = "UniqueID") %>%
+  # filter(Brest == 1 & LT == 1 & Thau == 1)
   as.matrix() %>%
   vennDiagram()
 ```
+
+mafft \
+    --thread 4 \
+    --auto \
+    oshv_wRef.fna \
+    > oshv_wRef.faa
 
 Note: Thau lagoon (Thau) and the LT (Marennes Olérons) were exchanged on the article using adobe illustrator.
 
@@ -197,7 +216,14 @@ set_order <- plot_order_samples %>%
                Samples = stringr::str_replace_all(Samples,"_"," ") ) %>%
   dplyr::select(Samples) %>% pull()
 
-Figure_03_B_comparative_genomic_nt <- comparative_genomic %>%
+Figure_03_B_comparative_genomic_nt <-  comparative_genomic %>%
+  dplyr::mutate(UniqueID= glue::glue("{POS}_{REF}>{ALT}")) %>%
+    as_tibble() %>%
+  group_by(UniqueID, ALT, ID_EXPERIMENT) %>%
+  mutate(ALT = paste(ALT, collapse = "")) %>%
+  data.frame() %>%
+  select(-UniqueID) %>%
+  distinct() %>%
  dplyr::mutate(ID_EXPERIMENT = stringr::str_replace_all(ID_EXPERIMENT,"NR_genome_",""),
                ID_EXPERIMENT = stringr::str_replace_all(ID_EXPERIMENT,"_NSI_broyage_"," "),
                ID_EXPERIMENT = stringr::str_replace_all(ID_EXPERIMENT,"_noPCR",""),
@@ -401,6 +427,7 @@ GC_table %>%
 ## Location of the positions within the OsHV-1 genome
 
 ```{r}
+Consensus_size = 186356
 var_CG_across_NR_consensus <- Table_02_binary_matrix %>%
   as.data.frame() %>%
   rownames_to_column("UniqueID") %>%

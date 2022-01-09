@@ -25,14 +25,14 @@ ipak <- function(pkg){
 }
 
 ipak(unique(
-  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly",  "taxize", "ggtree", "tidytree", "broom",
+  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly",  "tidytree", "broom",
     "hrbrthemes", "viridis", "ggsci", # palette
     "cowplot", "scales", "maptools", "gggenes") # plot
   ) )
 ```
 
 ```{r Base_Path}
-base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
+base_path <- "/home/propan2one/Project/OshV-1-molepidemio" # Base location for the folder
 ```
 
 # Preparation and import of data
@@ -115,17 +115,18 @@ for (file in list.files(path=directory, pattern="*_ann_SnpSift.csv")      ) {
                   POS = V2,
                   REF= V3,
                   ALT = V4,
-                  IMPACT = V5,
-                  EFFECT = V6,
-                  HGVS_P = V7,
-                  HGVS_C = V8,
-                  CDNA_POS = V9,
-                  CDNA_LEN = V10,
-                  AA_POS = V11,
-                  AA_LEN = V12,
-                  DISTANCE = V13,
-                  GENEID = V14,
-                  ID_EXPERIMENT = V15)
+                  IMPACT = V5)
+  # ,
+  #                 EFFECT = V6,
+  #                 HGVS_P = V7,
+  #                 HGVS_C = V8,
+  #                 CDNA_POS = V9,
+  #                 CDNA_LEN = V10,
+  #                 AA_POS = V11,
+  #                 AA_LEN = V12,
+  #                 DISTANCE = V13,
+  #                 GENEID = V14,
+  #                 ID_EXPERIMENT = V15
   
   VC <- full_join(bcftools, snpsift) %>% 
     dplyr::filter(ALT != "<*>") %>%
@@ -133,8 +134,7 @@ for (file in list.files(path=directory, pattern="*_ann_SnpSift.csv")      ) {
                   AO = as.integer(AO),
                   DP = as.integer(DP),
                   AF = AO / (DP),
-                  UniqueID= glue::glue("{POS}_{REF}>{ALT}"),
-                  ID = stringr::str_replace_all(GENEID,"GENE_","")) %>%
+                  UniqueID= glue::glue("{POS}_{REF}>{ALT}")) %>%
     select(ID_EXPERIMENT,
            UniqueID,
            POS,
@@ -148,27 +148,27 @@ for (file in list.files(path=directory, pattern="*_ann_SnpSift.csv")      ) {
   Table_04 <- dplyr::bind_rows(Table_04,VC)
 }
 
-# Annotation des ORFs
-gff <- data.table::fread(glue::glue("{base_path}/results/Tables/Hemovir_consensus_21_samples_gff.tab"),
-         sep = "\t",
-         fill=TRUE,
-         quote=FALSE) %>%
-  dplyr::filter(primary_tag == "CDS") %>%
-  dplyr::mutate(LENGTH_ORF = end - start -2)
+# # Annotation des ORFs
+# gff <- data.table::fread(glue::glue("{base_path}/results/Tables/Hemovir_consensus_21_samples_gff.tab"),
+#          sep = "\t",
+#          fill=TRUE,
+#          quote=FALSE) %>%
+#   dplyr::filter(primary_tag == "CDS") %>%
+#   dplyr::mutate(LENGTH_ORF = end - start -2)
 
-Table_04 <- left_join(Table_04,gff) %>%
-  dplyr::mutate(INFERENCE = 
-                  stringr::str_replace_all(inference,"ab initio prediction:Prodigal:002006, similar to AA sequence:Ostreid_herpesvirus.faa:", "") )
+# Table_04 <- left_join(Table_04,gff) %>%
+#   dplyr::mutate(INFERENCE = 
+#                   stringr::str_replace_all(inference,"ab initio prediction:Prodigal:002006, similar to AA sequence:Ostreid_herpesvirus.faa:", "") )
 ```
 
 ```{r GC_table}
+# importation Comparative genomics
 comparative_genomic <- data.table::fread(glue::glue("{base_path}/results/Tables/nucmer_numref.snps"),
                   skip = 3,
          sep = "\t",
          fill=TRUE,
          quote=FALSE)
 colnames(comparative_genomic) <-c("POS", "REF", "ALT","POS_ALT", "BUFF","DIST","R", "Q", "FRM","TAGS", "gREF","ID_EXPERIMENT")
-
 # Vector of GC position
 CG_POS <- comparative_genomic %>%
   select(POS) %>%
@@ -198,7 +198,7 @@ Table3 <- comparative_genomic %>%
 
 # Analyse
 
-## Figure 5 A Matrix of the 116 variants which were major or minor according to the samples.
+## Figure 5 A Matrix of the 132 variants which were major or minor according to the samples.
 
 ```{r}
 # Détermine le nombre d'ID unique entre les ind en ce basant sur la GC et le VC cons
@@ -253,6 +253,7 @@ Table4 %>%
   column_to_rownames(var = "UniqueID") %>%
   pheatmap(display_numbers = TRUE,
            number_format = "%0.01f",
+           fontsize = 5,
            cluster_rows = FALSE,
            cluster_cols = TRUE)
 
@@ -302,9 +303,10 @@ Supp_fig5_global <- Table4 %>%
   scale_color_manual(values=list(Brest = Brest_color, 
                                 LT = LT_color,
                                 Thau = Thau_color))
+Supp_fig5_global
 ```
 
-## Figure 5 B Dot plot of the 29 minor variants of Mo ind10 which are also found as major variants in Mo samples
+## Figure 5 B Dot plot of the 30 minor variants of Mo ind10 which are also found as major variants in Mo samples
 
 ```{r}
 Supp_fig_5_Lt_10 <- Table4 %>%
@@ -349,7 +351,7 @@ LT_10 <- Table4 %>%
          Genome = str_replace_all(Genome, "Thau","Th"))
 
 # graph
-mutation ="65016_T>A"
+mutation ="65003_T>A"
 
 Fig5_D_1 <- Table4 %>%
   dplyr::filter(POS %in% CG_POS) %>%
@@ -368,7 +370,7 @@ Fig5_D_1 <- Table4 %>%
   coord_polar("y", start=0)+
   # geom_text(aes(x=1, y = sum(Frequency) - Frequency/2, label=label))+
   # facet_wrap(vars(UniqueID)) +
-  ggtitle(glue(" LT 10 pour {mutation}")) +
+  ggtitle(glue("LT 10 pour {mutation}")) +
   theme_void()
 
 Fig5_D_2 <- Table4 %>%
@@ -427,7 +429,7 @@ Table4 %>%
 
 Note: Phylogenetic trees were created using Figure 2B and were modified on adobe illustrator to highlight the relationships.
 
-## Figure 5 E Dot plot of the 85 minor variants of Mo ind3 which are also found as major variants in Mo ind4/10 and in all samples from Br and Th
+## Figure 5 E Dot plot of the 95 minor variants of Mo ind3 which are also found as major variants in Mo ind4/10 and in all samples from Br and Th
 
 ```{r}
 Supp_fig_5_Lt_3 <- Table4 %>%
@@ -458,12 +460,11 @@ Supp_fig_5_Lt_3 <- Table4 %>%
                                 Thau = Thau_color))
 ```
 
-## Figure 5 F The minor variant found in Mo ind3 at position 57,091 and 65,624 of the C-NR-genome corresponds to major variants other samples
+## Figure 5 F The minor variant found in Mo ind3 at position 57,080 and 65,610 of the C-NR-genome corresponds to major variants other samples
 
-### Figure 5 F position 57,091
+### Figure 5 F position 57,080
 
 ```{r}
-
 ## LT ind3 and Brest and LT of others
 LT_3 <- Table4 %>%
   rename(Genome = ID_EXPERIMENT,
@@ -476,7 +477,7 @@ LT_3 <- Table4 %>%
          Genome = str_replace_all(Genome, "Thau","Th")) 
 
 # graph
-mutation ="57091_T>C"
+mutation ="57080_T>C"
 Fig5_C_3 <- Table4 %>%
   dplyr::filter(POS %in% CG_POS) %>%
   dplyr::filter(AF_cons < 0.5) %>%
@@ -494,6 +495,7 @@ Fig5_C_3 <- Table4 %>%
   coord_polar("y", start=0)+
   ggtitle(mutation) +
   theme_void()
+Fig5_C_3
 
 Fig5_C_4 <- Table4 %>%
   dplyr::filter(POS %in% CG_POS) %>%
@@ -520,7 +522,7 @@ Fig5_C_4 <- Table4 %>%
   coord_polar("y", start=0)+
   facet_grid(UniqueID ~ Genome) +
   theme_void()
-
+Fig5_C_4
 # data
 Table4 %>%
   dplyr::filter(POS %in% CG_POS) %>%
@@ -544,11 +546,11 @@ Table4 %>%
   dplyr::filter(UniqueID == mutation)
 ```
 
-### Figure 5 F position 65,624
+### Figure 5 F position 65,610
 
 ```{r}
 # graph
-mutation ="65624_C>T"
+ mutation ="65610_C>T"
 
 Fig5_C_1 <- Table4 %>%
   dplyr::filter(POS %in% CG_POS) %>%
@@ -565,14 +567,16 @@ Fig5_C_1 <- Table4 %>%
   ggplot(aes(x="", y=Frequency, fill=BASE))+
   geom_bar(stat="identity", width = 1)+
   coord_polar("y", start=0)+
+  ggtitle(mutation) +
   theme_void()
+Fig5_C_1
 
 Fig5_C_2 <- Table4 %>%
   dplyr::filter(POS %in% CG_POS) %>%
   dplyr::filter(AF_cons < 0.5) %>%
   dplyr::filter(ID_EXPERIMENT == "LT_2018_NSI_broyage_ind3_noPCR") %>% 
   left_join(.,Table3 %>% dplyr::rename(Genome = ID_EXPERIMENT) %>% 
-  dplyr::select(Genome, UniqueID))  %>% 
+              dplyr::select(Genome, UniqueID))  %>% 
   drop_na() %>%
   mutate(LOCATION = str_extract(Genome, "^.*_2"),
          LOCATION = str_replace_all(LOCATION, "_2",""),
@@ -580,7 +584,7 @@ Fig5_C_2 <- Table4 %>%
          Genome = str_replace_all(Genome, "_noPCR",""),
          Genome = str_replace_all(Genome, "Brest","Br"),
          Genome = str_replace_all(Genome, "Thau","Th")) %>% 
-  left_join(.,LT_3_brest) %>%
+  left_join(.,LT_3) %>%
   dplyr::mutate(RF = 1 - AF) %>%
   select(UniqueID, Genome, AF ,RF) %>%
   pivot_longer(c(-UniqueID, -Genome),
@@ -592,6 +596,7 @@ Fig5_C_2 <- Table4 %>%
   coord_polar("y", start=0)+
   facet_grid(UniqueID ~ Genome) +
   theme_void()
+Fig5_C_2
 
 # Data
 Table4 %>%
@@ -607,13 +612,13 @@ Table4 %>%
          Genome = str_replace_all(Genome, "_noPCR",""),
          Genome = str_replace_all(Genome, "Brest","Br"),
          Genome = str_replace_all(Genome, "Thau","Th")) %>% 
-  left_join(.,LT_3_brest) %>%
+  left_join(.,LT_3) %>%
   dplyr::mutate(RF = 1 - AF) %>%
   select(UniqueID, Genome, AF ,RF) %>%
   pivot_longer(c(-UniqueID, -Genome),
                names_to = "BASE", 
                values_to = "Frequency") %>%
-  dplyr::filter(UniqueID == "65624_C>T")
+  dplyr::filter(UniqueID == mutation)
 ```
 
 Note: Phylogenetic trees were created using Figure 2B and were modified on adobe illustrator to highlight the relationships.
@@ -622,28 +627,27 @@ Note: Phylogenetic trees were created using Figure 2B and were modified on adobe
 Fig5_bis <- list(Fig5_C_1, Fig5_C_2, Fig5_C_3, Fig5_C_4, Fig5_D_1, Fig5_D_2)
 Fig5_name <- c("Fig5_C_1", "Fig5_C_2", "Fig5_C_3", "Fig5_C_4", "Fig5_D_1", "Fig5_D_2")
 
-
-i = 1
-while (i <=length(Fig5_bis)) {
-  ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.jpeg"),
-         plot = Fig5_bis[[i]],
-         device = "jpeg",
-         path = glue::glue("{base_path}/results/Figures/jpeg/Figure_5"),
-         width = 180, units = "mm", dpi = 300)
-  
-  ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.tiff"),
-         plot = Fig5_bis[[i]],
-         device = "tiff",
-         path = glue::glue("{base_path}/results/Figures/tiff/Figure_5"),
-         width = 180, units = "mm", dpi = 300)
-  
-  ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.eps"),
-         plot = Fig5_bis[[i]],
-         device = "eps",
-         path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_5"),
-         width = 180, units = "mm", dpi = 300)
-  i = i+1
-}
+# i = 1
+# while (i <=length(Fig5_bis)) {
+#   ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.jpeg"),
+#          plot = Fig5_bis[[i]],
+#          device = "jpeg",
+#          path = glue::glue("{base_path}/results/Figures/jpeg/Figure_5"),
+#          width = 180, units = "mm", dpi = 300)
+#   
+#   ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.tiff"),
+#          plot = Fig5_bis[[i]],
+#          device = "tiff",
+#          path = glue::glue("{base_path}/results/Figures/tiff/Figure_5"),
+#          width = 180, units = "mm", dpi = 300)
+#   
+#   ggsave(glue::glue("{Fig5_name[i]}_Pie_chart.eps"),
+#          plot = Fig5_bis[[i]],
+#          device = "eps",
+#          path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_5"),
+#          width = 180, units = "mm", dpi = 300)
+#   i = i+1
+# }
 ```
 
 
