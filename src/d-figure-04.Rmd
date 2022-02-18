@@ -25,14 +25,14 @@ ipak <- function(pkg){
 }
 
 ipak(unique(
-  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly",  "taxize", "ggtree", "tidytree", "broom",
+  c("data.table", "tidyverse", "ape", "RColorBrewer", "pheatmap", "limma", "glue", "kableExtra", "plotly", "tidytree", "broom",
     "hrbrthemes", "viridis", "ggsci", # palette
     "cowplot", "scales", "maptools", "gggenes") # plot
   ) )
 ```
 
 ```{r Base_Path}
-base_path <- "~/Documents/OshV-1-molepidemio" # Base location for the folder
+base_path <- "/home/propan2one/Project/OshV-1-molepidemio" # Base location for the folder
 ```
 
 # Preparation and import of data
@@ -115,17 +115,7 @@ for (file in list.files(path=directory, pattern="*_ann_SnpSift.csv")      ) {
                   POS = V2,
                   REF= V3,
                   ALT = V4,
-                  IMPACT = V5,
-                  EFFECT = V6,
-                  HGVS_P = V7,
-                  HGVS_C = V8,
-                  CDNA_POS = V9,
-                  CDNA_LEN = V10,
-                  AA_POS = V11,
-                  AA_LEN = V12,
-                  DISTANCE = V13,
-                  GENEID = V14,
-                  ID_EXPERIMENT = V15)
+                  IMPACT = V5)
   
   VC <- full_join(bcftools, snpsift) %>% 
     dplyr::filter(ALT != "<*>") %>%
@@ -133,8 +123,8 @@ for (file in list.files(path=directory, pattern="*_ann_SnpSift.csv")      ) {
                   AO = as.integer(AO),
                   DP = as.integer(DP),
                   AF = AO / (DP),
-                  UniqueID= glue::glue("{POS}_{REF}>{ALT}"),
-                  ID = stringr::str_replace_all(GENEID,"GENE_","")) %>%
+                  UniqueID= glue::glue("{POS}_{REF}>{ALT}")) %>%
+                  # ID = stringr::str_replace_all(GENEID,"GENE_","")) %>%
     select(ID_EXPERIMENT,
            UniqueID,
            POS,
@@ -148,17 +138,17 @@ for (file in list.files(path=directory, pattern="*_ann_SnpSift.csv")      ) {
   Table_04 <- dplyr::bind_rows(Table_04,VC)
 }
 
-# Annotation des ORFs
-gff <- data.table::fread(glue::glue("{base_path}/results/Tables/Hemovir_consensus_21_samples_gff.tab"),
-         sep = "\t",
-         fill=TRUE,
-         quote=FALSE) %>%
-  dplyr::filter(primary_tag == "CDS") %>%
-  dplyr::mutate(LENGTH_ORF = end - start -2)
-
-Table_04 <- left_join(Table_04,gff) %>%
-  dplyr::mutate(INFERENCE = 
-                  stringr::str_replace_all(inference,"ab initio prediction:Prodigal:002006, similar to AA sequence:Ostreid_herpesvirus.faa:", "") )
+# # Annotation des ORFs
+# gff <- data.table::fread(glue::glue("{base_path}/results/Tables/Hemovir_consensus_21_samples_gff.tab"),
+#          sep = "\t",
+#          fill=TRUE,
+#          quote=FALSE) %>%
+#   dplyr::filter(primary_tag == "CDS") %>%
+#   dplyr::mutate(LENGTH_ORF = end - start -2)
+# 
+# Table_04 <- left_join(Table_04,gff) %>%
+#   dplyr::mutate(INFERENCE = 
+#                   stringr::str_replace_all(inference,"ab initio prediction:Prodigal:002006, similar to AA sequence:Ostreid_herpesvirus.faa:", "") )
 
 VC_majority_var <- Table_04 %>% 
   mutate(N_poly = if_else(stringr::str_detect(REF,"N"), "*","")) %>%
@@ -177,7 +167,17 @@ comparative_genomic <- data.table::fread(glue::glue("{base_path}/results/Tables/
          fill=TRUE,
          quote=FALSE)
 colnames(comparative_genomic) <-c("POS", "REF", "ALT","POS_ALT", "BUFF","DIST","R", "Q", "FRM","TAGS", "gREF","ID_EXPERIMENT")
+
+comparative_genomic <- comparative_genomic %>%
+dplyr::mutate(UniqueID= glue::glue("{POS}_{REF}>{ALT}")) %>%
+    as_tibble() %>%
+  group_by(UniqueID, ALT, ID_EXPERIMENT) %>%
+  mutate(ALT = paste(ALT, collapse = "")) %>%
+  data.frame() %>%
+  select(-POS_ALT, -UniqueID, -DIST) %>%
+  distinct() 
 ```
+
 
 # Analysis
 
@@ -276,33 +276,32 @@ while read pos av ap ; do echo -e "${pos}\t$(seqkit subseq  -r ${av}:${ap} $geno
 Note: In this approach there are no positions located between the beginning (e.g. 1 to 9) and the end, otherwise it would cause problems to output the sequences with seqkit.
 
 ```{r}
-GC_pb_seq.csv <- data.table::fread(glue::glue("{base_path}/raw/Set_verification/GC_pb_seq.csv")) %>%
-  select(-V2, -V3) %>%
-  rename(POS = V1, 
-         SEQ_GC = V4) %>%
-    distinct() %>%
-    as_tibble() %>%
-    filter(POS %in% position_comparison_VC_GC$POS) %>%
-    left_join(position_comparison_VC_GC, .)
-
-VC_pb_seq.csv <- data.table::fread(glue::glue("{base_path}/raw/Set_verification/VC_pb_seq.csv")) %>%
-  select(-V2, -V3) %>%
-  rename(POS = V1, 
-         SEQ_VC = V4) %>%
-    distinct() %>%
-    as_tibble() %>%
-    filter(POS %in% position_comparison_VC_GC$POS) %>%
-    left_join(position_comparison_VC_GC, .)
-
+# GC_pb_seq.csv <- data.table::fread(glue::glue("{base_path}/raw/Set_verification/GC_pb_seq.csv")) %>%
+#   select(-V2, -V3) %>%
+#   rename(POS = V1, 
+#          SEQ_GC = V4) %>%
+#     distinct() %>%
+#     as_tibble() %>%
+#     filter(POS %in% position_comparison_VC_GC$POS) %>%
+#     left_join(position_comparison_VC_GC, .)
+# 
+# VC_pb_seq.csv <- data.table::fread(glue::glue("{base_path}/raw/Set_verification/VC_pb_seq.csv")) %>%
+#   select(-V2, -V3) %>%
+#   rename(POS = V1, 
+#          SEQ_VC = V4) %>%
+#     distinct() %>%
+#     as_tibble() %>%
+#     filter(POS %in% position_comparison_VC_GC$POS) %>%
+#     left_join(position_comparison_VC_GC, .)
 ```
 
 The changes were then visualized directly on the sequence using [Ugene](http://ugene.net/). 
 
-![Mutation_14683](~/Documents/OshV-1-molepidemio/image/Mutation_14683.png)
+<!-- ![Mutation_14683](~/Documents/OshV-1-molepidemio/image/Mutation_14683.png) -->
 
 All the differences observed between variant calling and comparative genomics are mainly due to a lack of parsimony representation between the two methods (see example above). This is a common problem in variant calling analysis, see [variant normalization](https://genome.sph.umich.edu/wiki/Variant_Normalization). However, in some cases the difference between the two methods was not so clear and we did not fully elucidate the origin of the variation (see example below). Thus, we have chosen to include mutations with allelic frequencies strictly lower than 50% for the analysis of the positions of minority variants.
 
-![Mutation_65365](~/Documents/OshV-1-molepidemio/image/Mutation_around_65365.png)
+<!-- ![Mutation_65365](~/Documents/OshV-1-molepidemio/image/Mutation_around_65365.png) -->
 
 
 ```{r}
@@ -457,6 +456,7 @@ Table_06 %>%
   tidyr::pivot_wider(names_from = name,
                      values_from = value,
                      values_fill = list(value = 0)) %>%
+  arrange(UniqueID) %>%
   column_to_rownames(var = "UniqueID") %>%
   as.matrix() %>%
   vennDiagram()
@@ -593,24 +593,24 @@ Figure_04_C_variance_global_consensus <- Table_04 %>%
 ```
 
 ```{r Figure_04_C_variance_global_consensus_export, message=FALSE}
-ggsave("Figure_04_C_variance_global_consensus.jpeg",
-       plot = Figure_04_C_variance_global_consensus,
-       device = "jpeg",
-       path = glue::glue("{base_path}/results/Figures/jpeg/Figure_4"),
-       width = 180, units = "mm", dpi = 300)
-
-ggsave("Figure_04_C_variance_global_consensus.tiff",
-       plot = Figure_04_C_variance_global_consensus,
-       device = "tiff",
-       path = glue::glue("{base_path}/results/Figures/tiff/Figure_4"),
-       width = 180, units = "mm", dpi = 300)
-
-ggsave("Figure_04_C_variance_global_consensus.eps",
-       plot = Figure_04_C_variance_global_consensus,
-       device = "eps",
-       path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_4"),
-       width = 180, units = "mm", dpi = 300)
-rm(Figure_04_C_variance_global_consensus)
+# ggsave("Figure_04_C_variance_global_consensus.jpeg",
+#        plot = Figure_04_C_variance_global_consensus,
+#        device = "jpeg",
+#        path = glue::glue("{base_path}/results/Figures/jpeg/Figure_4"),
+#        width = 180, units = "mm", dpi = 300)
+# 
+# ggsave("Figure_04_C_variance_global_consensus.tiff",
+#        plot = Figure_04_C_variance_global_consensus,
+#        device = "tiff",
+#        path = glue::glue("{base_path}/results/Figures/tiff/Figure_4"),
+#        width = 180, units = "mm", dpi = 300)
+# 
+# ggsave("Figure_04_C_variance_global_consensus.eps",
+#        plot = Figure_04_C_variance_global_consensus,
+#        device = "eps",
+#        path = glue::glue("{base_path}/results/Figures/eps_svg/Figure_4"),
+#        width = 180, units = "mm", dpi = 300)
+# rm(Figure_04_C_variance_global_consensus)
 ```
 
 ## The frequency distribution of polymorphismes for common ploymorhpisme between 3 isolates
@@ -628,37 +628,37 @@ Table_04 %>%
   #do(tidy(kruskal.test(x= .$AF, g = .$VAR))) %>%
   #mutate(Difference = if_else( p.value < 0.05, "yes", "no")) %>%
   #tidyr::replace_na(list(Difference = "no"))
-Figure_04_D_frequency_distribution_common_consensus <- Table_04 %>%
-  dplyr::filter(UniqueID %in% Three_sets) %>%
-  tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
-  tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
-  tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
-  left_join(., Summary_statistique_common) %>%
-  dplyr::mutate(Delta = abs(AF - MEAN),
-                Difference = if_else(Delta <= 0.05, "no","yes")) %>%
-  select(Samples, UniqueID, AF, POS, VAR, MEAN,Delta, Difference) %>%
-  arrange(UniqueID, AF) %>%
-  mutate( Rank = rank(UniqueID, ties.method = "first")) %>%
-  group_by(VAR) %>%
-  mutate(Rank = dense_rank(UniqueID) ) %>%
-  arrange(desc(Rank)) %>%
-  mutate(Rank = as.character(Rank) ) %>%
-  ggplot(aes(x =forcats::fct_reorder(UniqueID, desc(AF)), y = AF)) +
-    # geom_boxplot() +
-  # geom_point(aes(colour=SAME_FREQ, fill = SAME_FREQ), shape = 21, colour = "black", size = 3, alpha = 0.5)+
-  geom_point(aes(colour=Difference, fill = Difference),shape = 21, colour = "black", size = 3, alpha = 0.5)+
-    labs(x = "Ranked freq",
-         y = "Variant frequency",
-         title = glue::glue("N = {Table_04 %>% dplyr::filter(UniqueID %in% Three_sets) %>% select(UniqueID) %>% distinct() %>% pull() %>% length()}")) +
-  # xlim(0, 204886) + # permet d'avoir la bonne taille du génome de OsHV1 µVar A
-  ylim(0,0.5)+
-  scale_fill_manual(values=c("white", "black")) +
-  facet_grid(VAR~.) +
-  geom_hline(yintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
-  geom_hline(yintercept = 0.75, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
-  geom_hline(yintercept = 0, size = 0.25, color = "black") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = -45, vjust = 0, hjust=0, size = 6))
+# Figure_04_D_frequency_distribution_common_consensus <- Table_04 %>%
+#   dplyr::filter(UniqueID %in% Three_sets) %>%
+#   tidyr::separate(ID_EXPERIMENT, c("LOCATION","YEARS","FAM","STEP","CONDITION","WGS_PCR"), remove = FALSE) %>%
+#   tidyr::unite(LOCATION, YEARS, col="VAR",sep="_",remove = FALSE) %>%
+#   tidyr::unite(LOCATION, CONDITION, col="Samples",sep="_",remove = FALSE) %>%
+#   left_join(., Summary_statistique_common) %>%
+#   dplyr::mutate(Delta = abs(AF - MEAN),
+#                 Difference = if_else(Delta <= 0.05, "no","yes")) %>%
+#   select(Samples, UniqueID, AF, POS, VAR, MEAN,Delta, Difference) %>%
+#   arrange(UniqueID, AF) %>%
+#   mutate( Rank = rank(UniqueID, ties.method = "first")) %>%
+#   group_by(VAR) %>%
+#   mutate(Rank = dense_rank(UniqueID) ) %>%
+#   arrange(desc(Rank)) %>%
+#   mutate(Rank = as.character(Rank) ) %>%
+#   ggplot(aes(x =forcats::fct_reorder(UniqueID, desc(AF)), y = AF)) +
+#     # geom_boxplot() +
+#   # geom_point(aes(colour=SAME_FREQ, fill = SAME_FREQ), shape = 21, colour = "black", size = 3, alpha = 0.5)+
+#   geom_point(aes(colour=Difference, fill = Difference),shape = 21, colour = "black", size = 3, alpha = 0.5)+
+#     labs(x = "Ranked freq",
+#          y = "Variant frequency",
+#          title = glue::glue("N = {Table_04 %>% dplyr::filter(UniqueID %in% Three_sets) %>% select(UniqueID) %>% distinct() %>% pull() %>% length()}")) +
+#   # xlim(0, 204886) + # permet d'avoir la bonne taille du génome de OsHV1 µVar A
+#   ylim(0,0.5)+
+#   scale_fill_manual(values=c("white", "black")) +
+#   facet_grid(VAR~.) +
+#   geom_hline(yintercept = 0.25, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+#   geom_hline(yintercept = 0.75, linetype = "dotdash", size = 0.5, color = "#5C5C5C") +
+#   geom_hline(yintercept = 0, size = 0.25, color = "black") +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = -45, vjust = 0, hjust=0, size = 6))
 ```
 
 ## The frequency distribution of polymorphismes for Unique ploymorhpisme for all isolates
